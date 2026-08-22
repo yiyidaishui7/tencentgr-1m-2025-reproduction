@@ -33,5 +33,5 @@ The project is complete only when every required item below has current evidence
 
 - [x] Unit tests and compile checks pass after the four-way documentation/result update.
 - [x] Public repository has no private paths, credentials, or restricted raw artifacts.
-- [ ] Final GitHub commit/CI and public Hugging Face release subset are reachable and hash-verified; all 77 private-manifest entries are present and hash-matched.
+- [x] Final GitHub commit/CI and public Hugging Face release subset are reachable and hash-verified; all 77 private-manifest entries are present and hash-matched.
 - [x] Final handoff summary contains metrics, limitations, resume text, interview kit, reproduction commands, and artifact links.
