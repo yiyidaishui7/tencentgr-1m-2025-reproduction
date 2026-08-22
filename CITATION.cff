@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this reproduction, please cite this repository and the official TencentGR-1M sources."
+title: "TencentGR-1M 2025 Generative Recommendation Reproduction"
+type: software
+authors:
+  - family-names: "yiyidaishui7"
+repository-code: "https://github.com/yiyidaishui7/tencentgr-1m-2025-reproduction"
+url: "https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction"
+license: "CC-BY-NC-4.0"
+version: "1.0.0"
+date-released: "2026-08-22"
+

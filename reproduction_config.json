@@ -1,0 +1,40 @@
+{
+  "project": "TencentGR-1M 2025 generative recommendation reproduction",
+  "official_baseline": "TencentAdvertisingAlgorithmCompetition/baseline_2025",
+  "dataset": "TAAC2025/TencentGR-1M",
+  "model": {
+    "architecture": "SASRec-style Transformer with feature fusion",
+    "hidden_units": 32,
+    "num_blocks": 1,
+    "num_heads": 1,
+    "max_sequence_length": 101,
+    "dropout_rate": 0.2,
+    "multimodal_embedding_fields": ["81"],
+    "multimodal_embedding_dimension": 32
+  },
+  "training": {
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "adam_betas": [0.9, 0.98],
+    "epochs": 3,
+    "seed": 2025,
+    "validation_ratio": 0.1,
+    "final_step": 1323,
+    "final_validation_loss": 0.2043
+  },
+  "evaluation": {
+    "target": "last action_type=1 item for each validation user",
+    "history": "events strictly before the held-out click",
+    "candidate_pool": "official TencentGR-1M 660k candidates",
+    "eligible_users": 78921,
+    "hit_rate_at_10": 0.03134780349970223,
+    "ndcg_at_10": 0.015969445344271957,
+    "competition_score": 0.020736736372455343
+  },
+  "weights": {
+    "file": "model.safetensors",
+    "tensor_count": 48,
+    "sha256": "1d53197a6c09fca20ad1c24d702a92a58adfc972f77f7236be3283d065db859b"
+  }
+}
+

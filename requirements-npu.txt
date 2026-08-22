@@ -1,0 +1,8 @@
+# Keep the ModelArts image's preinstalled torch/torch_npu pair. Installing the
+# generic PyPI torch wheel can break its CANN compatibility.
+numpy>=1.26.0
+tqdm>=4.60.0
+tensorboard>=2.14.0
+pyarrow>=14.0.0
+scikit-learn>=1.3.0
+huggingface_hub>=1.0.0
