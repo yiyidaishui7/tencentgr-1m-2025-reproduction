@@ -1,0 +1,42 @@
+{
+  "protocol_alignment": {
+    "evaluated_users": 78921,
+    "target_ids_equal": true,
+    "prefix_lengths_equal": true,
+    "user_ids_equal": true
+  },
+  "aggregate": {
+    "hit_rate_at_10": {
+      "multimodal": 0.03134780349970223,
+      "no_mm": 0.031753272259601374,
+      "absolute_delta": 0.0004054687598991427,
+      "relative_delta_percent": 1.2934518997574918
+    },
+    "ndcg_at_10": {
+      "multimodal": 0.015969445344271957,
+      "no_mm": 0.016520780563450226,
+      "absolute_delta": 0.0005513352191782693,
+      "relative_delta_percent": 3.4524381235070623
+    },
+    "competition_score": {
+      "multimodal": 0.020736736372455343,
+      "no_mm": 0.02124285298925708,
+      "absolute_delta": 0.0005061166168017356,
+      "relative_delta_percent": 2.440676332626812
+    }
+  },
+  "paired_audit": {
+    "both_hit": 1364,
+    "multimodal_only_hit": 1110,
+    "no_mm_only_hit": 1142,
+    "neither_hit": 75305,
+    "score_delta_normal_95ci": [
+      -0.00025188915829635946,
+      0.0012641223918998352
+    ]
+  },
+  "limitations": [
+    "The paired normal 95% interval includes zero.",
+    "Each configuration was trained with one seed, so this is not evidence that multimodal features are generally harmful."
+  ]
+}

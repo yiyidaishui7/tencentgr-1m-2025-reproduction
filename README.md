@@ -18,19 +18,25 @@ evaluation, ablation, SafeTensors publication, and verified artifact handling.
 
 ## Results at a glance
 
-| Metric | Result |
-|---|---:|
-| Evaluated users | 78,921 |
-| HR@10 | **0.0313478** |
-| NDCG@10 | **0.0159694** |
-| Competition-style score | **0.0207367** |
-| Final validation BCE | **0.2043** |
-| Offline evaluation runtime | 241.5 s |
+| Metric | Multimodal | No-MM | No-MM relative delta |
+|---|---:|---:|---:|
+| Evaluated users | 78,921 | 78,921 | — |
+| HR@10 | 0.0313478 | **0.0317533** | +1.29% |
+| NDCG@10 | 0.0159694 | **0.0165208** | +3.45% |
+| Competition-style score | 0.0207367 | **0.0212429** | +2.44% |
+| Final validation BCE | 0.2043 | **0.2040** | — |
+| Offline evaluation runtime | 241.5 s | **133.9 s** | -44.54% |
 
 The evaluation uses a seeded 90/10 user split and holds out the last click from
 each validation sequence. Histories contain only earlier events, and retrieval
 runs against the official 660k candidate pool. See [the full evaluation
 contract and slices](docs/RESULTS.md).
+
+The no-MM run is a paired, same-protocol ablation: user IDs, targets, and
+history lengths match row by row. Its point estimate is higher, but the paired
+95% interval for score delta includes zero and each configuration has only one
+training seed. The result therefore motivates better multimodal fusion; it
+does not establish that multimodal information is generally harmful.
 
 ## System overview
 
@@ -129,7 +135,8 @@ python offline_eval.py \
 ├── runtime_utils.py                   # device, seed, checkpoint portability
 ├── scripts/                           # download and dataset audits
 ├── tests/                             # regression tests
-├── metrics/offline_metrics.json       # machine-readable final metrics
+├── metrics/offline_metrics*.json      # machine-readable paired metrics
+├── metrics/ablation_comparison.json   # alignment, deltas, uncertainty
 └── docs/                              # results and resume-ready material
 ```
 
@@ -150,4 +157,3 @@ This work is derived from the
 licensed under CC BY-NC 4.0. TencentGR-1M is published by TAAC2025 under
 CC BY 4.0. This repository therefore uses CC BY-NC 4.0 and is restricted to
 non-commercial use. See [ATTRIBUTION.md](ATTRIBUTION.md) and [LICENSE](LICENSE).
-

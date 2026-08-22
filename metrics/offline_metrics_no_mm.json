@@ -1,0 +1,65 @@
+{
+  "evaluation_contract": {
+    "split": "same seeded 90/10 user split as baseline training",
+    "seed": 2025,
+    "valid_ratio": 0.1,
+    "target": "last action_type=1 item for each validation user",
+    "history": "events strictly before the held-out click",
+    "candidate_pool": "official TencentGR-1M 660k candidates",
+    "exclusions": "users without a click or whose target is absent from candidates"
+  },
+  "model": {
+    "checkpoint": "model.pt",
+    "disable_mm_emb": true,
+    "mm_emb_id": [
+      "81"
+    ],
+    "device": "cuda:0"
+  },
+  "audit": {
+    "validation_users": 100184,
+    "users_with_click": 98439,
+    "target_missing_from_candidate_pool": 19518,
+    "users_without_click": 1745,
+    "eligible_users": 78921,
+    "evaluated_users": 78921
+  },
+  "metrics": {
+    "evaluated_users": 78921,
+    "hits": 2506,
+    "hit_rate_at_10": 0.031753272259601374,
+    "ndcg_at_10": 0.016520780563450226,
+    "competition_score": 0.02124285298925708
+  },
+  "slices": {
+    "history_0_20": {
+      "evaluated_users": 1125,
+      "hits": 43,
+      "hit_rate_at_10": 0.03822222222222222,
+      "ndcg_at_10": 0.019296031612864,
+      "competition_score": 0.025163150701765048
+    },
+    "history_21_50": {
+      "evaluated_users": 4366,
+      "hits": 160,
+      "hit_rate_at_10": 0.03664681630783326,
+      "ndcg_at_10": 0.019987686413832716,
+      "competition_score": 0.02515201668097288
+    },
+    "history_51_80": {
+      "evaluated_users": 23339,
+      "hits": 865,
+      "hit_rate_at_10": 0.03706242769613094,
+      "ndcg_at_10": 0.019624309656981545,
+      "competition_score": 0.025030126249117858
+    },
+    "history_81_plus": {
+      "evaluated_users": 50091,
+      "hits": 1438,
+      "hit_rate_at_10": 0.028707751891557366,
+      "ndcg_at_10": 0.014710237074853718,
+      "competition_score": 0.019049466668031846
+    }
+  },
+  "runtime_seconds": 133.92568397521973
+}
