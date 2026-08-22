@@ -63,6 +63,25 @@ class FourVariantComparisonTests(unittest.TestCase):
         self.assertIn("window_effect_without_mm", result["paired"])
         self.assertAlmostEqual(result["interaction"]["mean_score_delta"], 0.5)
 
+    def test_reports_row_aligned_history_slices_with_paired_statistics(self):
+        prefixes = [10, 30, 60, 90]
+        for arrays in self.predictions.values():
+            arrays["prefix_lengths"] = np.asarray(prefixes, dtype=np.int16)
+
+        result = compare_four_variants(self.predictions, k=2)
+
+        self.assertEqual(
+            list(result["history_slices"]), ["0-20", "21-50", "51-80", "81+"]
+        )
+        self.assertEqual(result["history_slices"]["21-50"]["users"], 1)
+        self.assertEqual(
+            result["history_slices"]["21-50"]["aggregate"]["nomm101"]["hits"], 1
+        )
+        self.assertIn(
+            "no_mm_effect_at_50", result["history_slices"]["21-50"]["paired"]
+        )
+        self.assertIn("interaction", result["history_slices"]["81+"])
+
     def test_rejects_row_misalignment(self):
         self.predictions["nomm50"] = _prediction(
             [[1, 9], [2, 9], [3, 9], [4, 9]], self.targets, users=[0, 1, 2, 99]
