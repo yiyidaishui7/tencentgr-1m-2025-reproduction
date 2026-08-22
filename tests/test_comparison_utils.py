@@ -1,4 +1,9 @@
 import math
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
 
 import numpy as np
@@ -71,6 +76,34 @@ class FourVariantComparisonTests(unittest.TestCase):
 
         with self.assertRaisesRegex(ValueError, "exactly"):
             compare_four_variants(self.predictions, k=2)
+
+
+class ComparisonCliTests(unittest.TestCase):
+    def test_writes_machine_readable_four_way_report(self):
+        targets = [1, 2]
+        variants = {
+            "mm101": _prediction([[1, 9], [9, 8]], targets),
+            "nomm101": _prediction([[1, 9], [2, 9]], targets),
+            "mm50": _prediction([[1, 9], [9, 2]], targets),
+            "nomm50": _prediction([[1, 9], [2, 9]], targets),
+        }
+        script = Path(__file__).parents[1] / "scripts" / "compare_four_variants.py"
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            root = Path(temporary_directory)
+            arguments = [sys.executable, str(script)]
+            for name, arrays in variants.items():
+                archive = root / f"{name}.npz"
+                np.savez_compressed(archive, **arrays)
+                arguments.extend([f"--{name}", str(archive)])
+            output = root / "comparison.json"
+            arguments.extend(["--output", str(output), "--k", "2"])
+
+            completed = subprocess.run(arguments, text=True, capture_output=True, check=False)
+
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            report = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(report["alignment"]["evaluated_users"], 2)
+            self.assertIn("interaction", report)
 
 
 if __name__ == "__main__":
