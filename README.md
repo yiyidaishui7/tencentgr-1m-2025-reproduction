@@ -5,7 +5,7 @@
 [![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Model-yellow)](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 [![Dataset](https://img.shields.io/badge/Dataset-TencentGR--1M-blue)](https://huggingface.co/datasets/TAAC2025/TencentGR-1M)
 
-[中文说明](README_CN.md) · [Detailed results](docs/RESULTS.md) · [Resume kit](docs/RESUME.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
+[中文说明](README_CN.md) · [Delivery index](DELIVERY_INDEX.md) · [Detailed results](docs/RESULTS.md) · [Resume kit](docs/RESUME.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 
 An independent, non-official reproduction of the 2025 Tencent Ads Algorithm
 Competition baseline on TencentGR-1M. The project turns the official starting
@@ -18,25 +18,27 @@ evaluation, ablation, SafeTensors publication, and verified artifact handling.
 
 ## Results at a glance
 
-| Metric | Multimodal | No-MM | No-MM relative delta |
-|---|---:|---:|---:|
-| Evaluated users | 78,921 | 78,921 | — |
-| HR@10 | 0.0313478 | **0.0317533** | +1.29% |
-| NDCG@10 | 0.0159694 | **0.0165208** | +3.45% |
-| Competition-style score | 0.0207367 | **0.0212429** | +2.44% |
-| Final validation BCE | 0.2043 | **0.2040** | — |
-| Offline evaluation runtime | 241.5 s | **133.9 s** | -44.54% |
+| Variant | maxlen | MM | HR@10 | NDCG@10 | Score | Final BCE |
+|---|---:|---|---:|---:|---:|---:|
+| MM101 | 101 | on | 0.0313478 | 0.0159694 | 0.0207367 | 0.2043 |
+| no-MM101 | 101 | off | 0.0317533 | 0.0165208 | 0.0212429 | **0.2040** |
+| MM50 | 50 | on | 0.0320827 | 0.0160503 | 0.0210203 | 0.2061 |
+| **no-MM50** | 50 | off | **0.0337046** | **0.0172092** | **0.0223228** | 0.2055 |
 
 The evaluation uses a seeded 90/10 user split and holds out the last click from
 each validation sequence. Histories contain only earlier events, and retrieval
 runs against the official 660k candidate pool. See [the full evaluation
 contract and slices](docs/RESULTS.md).
 
-The no-MM run is a paired, same-protocol ablation: user IDs, targets, and
-history lengths match row by row. Its point estimate is higher, but the paired
-95% interval for score delta includes zero and each configuration has only one
-training seed. The result therefore motivates better multimodal fusion; it
-does not establish that multimodal information is generally harmful.
+All four prediction files contain the same users, targets, and original
+history lengths row by row. no-MM50 is the best fixed-seed point estimate:
+`+7.65%` versus MM101, `+5.08%` versus no-MM101, and `+6.20%` versus MM50.
+The latter two paired score intervals are positive for this evaluation
+population, but every configuration has only one training seed. The overall
+2x2 interaction interval includes zero, so the study does not establish a
+stable causal interaction or that multimodal information is generally
+harmful. The largest gain is concentrated in the 81+ history slice, which
+contains 63.47% of evaluated users.
 
 ## System overview
 
@@ -132,11 +134,12 @@ python offline_eval.py \
 ├── infer.py / eval.py                 # candidate encoding and retrieval
 ├── offline_eval.py                    # audited last-click evaluation
 ├── candidate_utils.py                 # schema and ID normalization
+├── comparison_utils.py                # paired 2x2 and history-slice statistics
 ├── runtime_utils.py                   # device, seed, checkpoint portability
-├── scripts/                           # download and dataset audits
+├── scripts/                           # download, audits, and four-way comparison CLI
 ├── tests/                             # regression tests
-├── metrics/offline_metrics*.json      # machine-readable paired metrics
-├── metrics/ablation_comparison.json   # alignment, deltas, uncertainty
+├── metrics/offline_metrics*.json      # machine-readable metrics for four variants
+├── metrics/four_way_comparison.json   # alignment, slices, deltas, interaction
 └── docs/                              # results and resume-ready material
 ```
 

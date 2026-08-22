@@ -31,10 +31,38 @@
     "ndcg_at_10": 0.015969445344271957,
     "competition_score": 0.020736736372455343
   },
+  "controlled_experiment": {
+    "seed": 2025,
+    "factors": {
+      "max_sequence_length": [101, 50],
+      "multimodal_enabled": [true, false]
+    },
+    "row_alignment": {
+      "evaluated_users": 78921,
+      "user_ids_equal": true,
+      "target_ids_equal": true,
+      "prefix_lengths_equal": true
+    },
+    "variants": {
+      "mm101": {"hr_at_10": 0.03134780349970223, "ndcg_at_10": 0.01596944534427196, "score": 0.02073673637245535, "final_validation_bce": 0.2043},
+      "nomm101": {"hr_at_10": 0.031753272259601374, "ndcg_at_10": 0.01652078056345023, "score": 0.021242852989257086, "final_validation_bce": 0.2040},
+      "mm50": {"hr_at_10": 0.03208271562701943, "ndcg_at_10": 0.01605027585602113, "score": 0.0210203321850306, "final_validation_bce": 0.2061},
+      "nomm50": {"hr_at_10": 0.033704590666615984, "ndcg_at_10": 0.01720920990550504, "score": 0.022322777941449427, "final_validation_bce": 0.2055}
+    },
+    "best_measured_point_estimate": "nomm50",
+    "nomm50_relative_score_delta_vs_mm101_percent": 7.648462807777309,
+    "overall_interaction_score_delta": 0.000796329139617089,
+    "overall_interaction_normal_95ci": [-0.0002520685996356631, 0.0018447268788698411],
+    "limitations": [
+      "Each configuration was trained once, so training-seed uncertainty is not estimated.",
+      "Paired intervals describe the fixed-seed evaluation population.",
+      "Offline holdout scores are not official leaderboard scores."
+    ]
+  },
   "weights": {
+    "published_checkpoint_variant": "mm101",
     "file": "model.safetensors",
     "tensor_count": 48,
     "sha256": "1d53197a6c09fca20ad1c24d702a92a58adfc972f77f7236be3283d065db859b"
   }
 }
-
