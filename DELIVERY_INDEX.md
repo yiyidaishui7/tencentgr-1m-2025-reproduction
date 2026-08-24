@@ -14,6 +14,7 @@ This page is the final entry point for resume use, reproduction, and technical i
 - [Technical interview Q&A (Chinese)](docs/INTERVIEW_QA_CN.md)
 - [Engineering incident review (Chinese)](docs/POSTMORTEM_CN.md)
 - [Reproduction runbook (Chinese)](docs/REPRODUCTION_RUNBOOK_CN.md)
+- [Resource, runtime, and artifact budget (Chinese)](docs/RESOURCE_BUDGET_CN.md)
 - [End-to-end acceptance checklist](docs/ACCEPTANCE_CHECKLIST.md)
 
 ## Reproduction surfaces
@@ -21,5 +22,6 @@ This page is the final entry point for resume use, reproduction, and technical i
 - Code: <https://github.com/yiyidaishui7/tencentgr-1m-2025-reproduction>
 - Public model and small artifacts: <https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction>
 - Dataset source: <https://huggingface.co/datasets/TAAC2025/TencentGR-1M>
+- Drift-resistant 2x2 plan generator: `python scripts/plan_2x2_experiments.py --help`
 
 The full private evidence archive is intentionally not linked from the public repository. It contains restricted raw artifacts, PyTorch checkpoints, predictions, and execution logs. Public claims must remain reproducible from the documented protocol and published aggregate evidence.

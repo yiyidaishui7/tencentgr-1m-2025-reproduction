@@ -14,8 +14,9 @@ The project is complete only when every required item below has current evidence
 ## Reproducibility and publishing
 
 - [x] Public code includes deterministic split, portable device selection, exact Top-10 evaluation, no-MM ablation, and regression tests.
-- [x] Public GitHub CI passes on the current four-way result commit.
-- [x] Public Hugging Face model and small artifacts verified.
+- [x] Review-only 2x2 planner emits the canonical MM/no-MM x maxlen 101/50 argv, checkpoint, and comparison contract without starting jobs.
+- [x] Public GitHub CI passes on the current public HEAD.
+- [x] Public Hugging Face contains the audited MM101 and best-point-estimate no-MM50 SafeTensors checkpoints; both LFS SHA-256 values are verified.
 - [x] Expanded private Hugging Face archive inventory and all 77 manifest hashes verified.
 - [x] Recent-window metrics and promoted small artifacts published and reverified.
 - [x] Final run-side temporary directories confirmed absent; private parent permissions confirmed.
@@ -27,11 +28,14 @@ The project is complete only when every required item below has current evidence
 - [x] Technical deep-dive Q&A drafted.
 - [x] Engineering incident and trade-off review drafted.
 - [x] Final 3-minute and 10-minute interview scripts updated with the four-way result.
+- [x] Measured evaluation runtime, memory scaling, and public/private artifact budget documented with scope limitations.
 - [x] Delivery index relative links and current public artifact paths verified.
 
 ## Final gate
 
-- [x] Unit tests and compile checks pass after the four-way documentation/result update.
+- [x] 32 unit tests complete after the planner/checkpoint update (30 pass, 2 expected local PyTorch skips); 23 Python files compile and 7 JSON files parse.
+- [x] The generated review plan contains four distinct variants and the expected row-aligned comparison inputs.
+- [x] All 29 relative links across 15 Markdown files resolve.
 - [x] Public repository has no private paths, credentials, or restricted raw artifacts.
 - [x] Final GitHub commit/CI and public Hugging Face release subset are reachable and hash-verified; all 77 private-manifest entries are present and hash-matched.
 - [x] Final handoff summary contains metrics, limitations, resume text, interview kit, reproduction commands, and artifact links.

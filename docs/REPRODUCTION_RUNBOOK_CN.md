@@ -25,7 +25,25 @@ python scripts/audit_id_alignment.py /data/TencentGR-1M
 
 数据来源为 `TAAC2025/TencentGR-1M`。审计应在训练前完成；任何缺失文件、Schema 不兼容或 ID 映射错误都应视为硬失败。
 
-## 3. 训练 MM101
+## 3. 生成并审阅四组实验计划
+
+```bash
+python scripts/plan_2x2_experiments.py \
+  --config reproduction_config.json \
+  --data-path /data/TencentGR-1M \
+  --runs-root ./runs \
+  --eval-root ./eval \
+  --scratch-root ./scratch \
+  --device cuda:0 \
+  --output ./plans/seed2025_2x2.json
+```
+
+计划器只输出 JSON，不会启动训练。它硬性检查 `mm101`、`nomm101`、`mm50`、
+`nomm50` 四组是否完整，并为每组写出训练 argv、私有日志/权重目录、评测 argv、
+checkpoint glob 和最终四组比较输入。实际调度前应审阅该文件并逐条执行；评测命令中
+的 `{checkpoint}` 替换为该组 `checkpoint_glob` 匹配到的最终 checkpoint。
+
+## 4. 训练 MM101
 
 ```bash
 python main.py \
@@ -38,7 +56,7 @@ python main.py \
   --num_epochs 3
 ```
 
-## 4. 训练 no-MM101
+## 5. 训练 no-MM101
 
 ```bash
 python main.py \
@@ -54,7 +72,10 @@ python main.py \
 
 近期窗口实验只把 `--maxlen` 改为 `50`；不得同时修改优化器、Epoch 或隐藏维度。
 
-## 5. 正式离线评测
+MM50/no-MM50 使用计划文件中的同口径命令；它们只把 `--maxlen` 改为 50，
+no-MM50 同时保留 `--disable_mm_emb`。不得同时修改优化器、Epoch 或隐藏维度。
+
+## 6. 正式离线评测
 
 ```bash
 python offline_eval.py \
@@ -77,7 +98,7 @@ python offline_eval.py \
 - 模型权重和执行日志。
 - SHA-256 清单。
 
-## 6. 正确性检查
+## 7. 正确性检查
 
 ```bash
 python -m unittest discover -s tests -v
@@ -105,9 +126,18 @@ python scripts/compare_four_variants.py \
 
 该命令会硬性检查用户、Target 和原始历史长度逐行一致，并输出总体指标、四条成对效应、差分中的差分交互项，以及 0–20、21–50、51–80、81+ 四个历史桶的同口径统计。
 
-## 7. 发布
+## 8. 发布
 
 - GitHub：只发布代码、小型指标、说明和测试。
 - 公开 Hugging Face：SafeTensors 权重和可公开小产物。
 - 私有归档：原始/受限数据、PyTorch 权重、预测和完整日志。
 - 上传后重新列举远端文件；LFS/Xet 文件核对对象 SHA，普通文件下载后再计算 SHA-256。
+
+公开权重有两个：
+
+- `model.safetensors`：MM101 审计基线，使用 `--maxlen 101`，保留 MM。
+- `model_nomm50.safetensors`：最佳固定 seed 点估计，必须使用
+  `--maxlen 50 --disable_mm_emb`。
+
+显存量级、四组端到端评测耗时和存储预算见
+[RESOURCE_BUDGET_CN.md](RESOURCE_BUDGET_CN.md)。

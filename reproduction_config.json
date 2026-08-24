@@ -63,6 +63,24 @@
     "published_checkpoint_variant": "mm101",
     "file": "model.safetensors",
     "tensor_count": 48,
-    "sha256": "1d53197a6c09fca20ad1c24d702a92a58adfc972f77f7236be3283d065db859b"
+    "sha256": "1d53197a6c09fca20ad1c24d702a92a58adfc972f77f7236be3283d065db859b",
+    "published_checkpoints": {
+      "mm101": {
+        "file": "model.safetensors",
+        "tensor_count": 48,
+        "sha256": "1d53197a6c09fca20ad1c24d702a92a58adfc972f77f7236be3283d065db859b",
+        "max_sequence_length": 101,
+        "disable_mm_emb": false,
+        "role": "audited baseline"
+      },
+      "nomm50": {
+        "file": "model_nomm50.safetensors",
+        "tensor_count": 46,
+        "sha256": "50be9b4cdb931624a62c1b700803e3ea3f8b51c2a1a8419fe89a7ba6dba8420d",
+        "max_sequence_length": 50,
+        "disable_mm_emb": true,
+        "role": "best fixed-seed point estimate"
+      }
+    }
   }
 }

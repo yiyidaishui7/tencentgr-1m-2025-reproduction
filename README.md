@@ -5,7 +5,7 @@
 [![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Model-yellow)](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 [![Dataset](https://img.shields.io/badge/Dataset-TencentGR--1M-blue)](https://huggingface.co/datasets/TAAC2025/TencentGR-1M)
 
-[中文说明](README_CN.md) · [Delivery index](DELIVERY_INDEX.md) · [Detailed results](docs/RESULTS.md) · [Resume kit](docs/RESUME.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
+[中文说明](README_CN.md) · [Delivery index](DELIVERY_INDEX.md) · [Detailed results](docs/RESULTS.md) · [Resource budget](docs/RESOURCE_BUDGET_CN.md) · [Resume kit](docs/RESUME.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 
 An independent, non-official reproduction of the 2025 Tencent Ads Algorithm
 Competition baseline on TencentGR-1M. The project turns the official starting
@@ -40,6 +40,11 @@ stable causal interaction or that multimodal information is generally
 harmful. The largest gain is concentrated in the 81+ history slice, which
 contains 63.47% of evaluated users.
 
+Two purpose-specific SafeTensors checkpoints are public: `model.safetensors`
+is the audited MM101 baseline; `model_nomm50.safetensors` is the best
+fixed-seed point estimate and must be loaded with `--maxlen 50
+--disable_mm_emb`. Their configurations are not interchangeable.
+
 ## System overview
 
 ```mermaid
@@ -66,10 +71,14 @@ flowchart LR
   depend on a machine-specific Faiss executable.
 - Implemented a leakage-aware last-click offline evaluator with aggregate and
   history-length slice metrics.
-- Added SafeTensors loading and published a 48-tensor checkpoint verified
-  tensor-by-tensor against the evaluated PyTorch state dict.
+- Added SafeTensors loading and published 48-tensor MM101 and 46-tensor no-MM50
+  checkpoints, each verified tensor-by-tensor against its evaluated PyTorch
+  state dict.
 - Added regression tests for device routing, candidate decoding, binary ANN
   I/O, holdout construction, and competition metric weighting.
+- Added a review-only 2x2 plan generator that freezes the four argv lists,
+  private output roots, checkpoint globs, and comparison inputs as JSON without
+  starting a GPU process.
 
 ## Reproduce
 
@@ -97,22 +106,37 @@ The raw 137 GB dataset is not mirrored in this repository. Use the
 
 ### 3. Train
 
+Generate and review the exact four-way plan first:
+
+```bash
+python scripts/plan_2x2_experiments.py \
+  --data-path /data/TencentGR-1M \
+  --device cuda:0 \
+  --output ./plans/seed2025_2x2.json
+```
+
+The planner never starts training. It makes parameter drift visible before the
+commands are handed to a local or cluster scheduler.
+
 ```bash
 python main.py \
   --data_path /data/TencentGR-1M \
   --device cuda:0 \
   --output_dir ./outputs \
-  --seed 2025
+  --seed 2025 \
+  --maxlen 50 \
+  --disable_mm_emb
 ```
 
-Run the ablation with `--disable_mm_emb`. Short smoke runs can use
+The command above trains the no-MM50 best-point-estimate configuration. Remove
+the final two flags for the MM101 baseline. Short smoke runs can use
 `--max_train_steps` and `--max_valid_steps`.
 
-### 4. Download the evaluated checkpoint
+### 4. Download a published checkpoint
 
 ```bash
 pip install -U huggingface_hub
-hf download sixteensun/tencentgr-1m-2025-reproduction model.safetensors \
+hf download sixteensun/tencentgr-1m-2025-reproduction model_nomm50.safetensors \
   --local-dir ./weights
 ```
 
@@ -121,10 +145,12 @@ hf download sixteensun/tencentgr-1m-2025-reproduction model.safetensors \
 ```bash
 python offline_eval.py \
   --data_path /data/TencentGR-1M \
-  --checkpoint ./weights/model.safetensors \
+  --checkpoint ./weights/model_nomm50.safetensors \
   --output_dir ./offline_eval \
   --scratch_dir ./offline_eval_scratch \
-  --device cuda:0
+  --device cuda:0 \
+  --maxlen 50 \
+  --disable_mm_emb
 ```
 
 ## Repository layout
@@ -135,6 +161,7 @@ python offline_eval.py \
 ├── offline_eval.py                    # audited last-click evaluation
 ├── candidate_utils.py                 # schema and ID normalization
 ├── comparison_utils.py                # paired 2x2 and history-slice statistics
+├── experiment_plan.py                 # drift-resistant four-variant command plan
 ├── runtime_utils.py                   # device, seed, checkpoint portability
 ├── scripts/                           # download, audits, and four-way comparison CLI
 ├── tests/                             # regression tests

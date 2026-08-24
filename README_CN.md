@@ -1,6 +1,6 @@
 # TencentGR-1M 2025 全模态生成式推荐复现
 
-[English](README.md) · [最终交付索引](DELIVERY_INDEX.md) · [完整实验结果](docs/RESULTS.md) · [简历与面试材料](docs/RESUME.md) · [模型权重](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
+[English](README.md) · [最终交付索引](DELIVERY_INDEX.md) · [完整实验结果](docs/RESULTS.md) · [资源预算](docs/RESOURCE_BUDGET_CN.md) · [简历与面试材料](docs/RESUME.md) · [模型权重](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 
 本项目基于 2025 腾讯广告算法大赛官方 Baseline，在公开的
 TencentGR-1M 数据集上完成独立、非官方的端到端复现。项目覆盖确定性训练、
@@ -28,6 +28,10 @@ SafeTensors 发布和产物校验。
 seed，且整体 2×2 交互项区间仍跨过 0，因此不能声称存在稳定因果交互，也不能
 声称多模态信息普遍无效。主要收益集中在占评测人口 63.47% 的 81+ 长历史组。
 
+公开权重包含两个用途明确的 SafeTensors：`model.safetensors` 是 MM101 审计
+基线；`model_nomm50.safetensors` 对应最佳固定 seed 点估计，加载时必须同时使用
+`--maxlen 50 --disable_mm_emb`。二者不能混用配置。
+
 ## 架构
 
 ```mermaid
@@ -51,8 +55,11 @@ flowchart LR
   item ID 映射。
 - 增加 PyTorch 精确内积 Top-10 后端，摆脱机器专用 Faiss 可执行文件依赖。
 - 实现防泄漏的最后点击留出评估，并输出整体及历史长度分桶指标。
-- 支持 SafeTensors，发布的 48 个张量已与正式评估使用的 `.pt` 权重逐项验证一致。
+- 支持 SafeTensors，发布 48 张量的 MM101 与 46 张量的 no-MM50 权重，二者均与
+  各自正式评估使用的 `.pt` 权重逐项验证一致。
 - 为设备路由、候选解析、ANN 二进制格式、留出逻辑和指标计算增加回归测试。
+- 增加只生成、不启动训练的 2×2 计划器，把四组 argv、私有输出目录和比较输入固化
+  为机器可读 JSON，避免人工改参数导致实验漂移。
 
 ## 快速复现
 
@@ -63,22 +70,37 @@ python scripts/download_tencentgr_1m.py /data/TencentGR-1M
 python scripts/validate_tencentgr_1m.py /data/TencentGR-1M
 python scripts/audit_id_alignment.py /data/TencentGR-1M
 
+python scripts/plan_2x2_experiments.py \
+  --data-path /data/TencentGR-1M \
+  --device cuda:0 \
+  --output ./plans/seed2025_2x2.json
+
 python main.py \
   --data_path /data/TencentGR-1M \
   --device cuda:0 \
   --output_dir ./outputs \
-  --seed 2025
+  --seed 2025 \
+  --maxlen 50 \
+  --disable_mm_emb
 
-hf download sixteensun/tencentgr-1m-2025-reproduction model.safetensors \
+hf download sixteensun/tencentgr-1m-2025-reproduction model_nomm50.safetensors \
   --local-dir ./weights
 
 python offline_eval.py \
   --data_path /data/TencentGR-1M \
-  --checkpoint ./weights/model.safetensors \
+  --checkpoint ./weights/model_nomm50.safetensors \
   --output_dir ./offline_eval \
   --scratch_dir ./offline_eval_scratch \
-  --device cuda:0
+  --device cuda:0 \
+  --maxlen 50 \
+  --disable_mm_emb
 ```
+
+上面的训练和评测命令对应 no-MM50 最佳点估计；去掉最后两个配置参数即可运行
+MM101 审计基线。
+
+计划器只写命令清单，不会自行占用 GPU。完整四组执行规则和 checkpoint 选择说明见
+[复现手册](docs/REPRODUCTION_RUNBOOK_CN.md)。
 
 原始数据不在本仓库重复发布，请从
 [TAAC2025/TencentGR-1M](https://huggingface.co/datasets/TAAC2025/TencentGR-1M)
