@@ -22,9 +22,21 @@ The repository also contains a resource-scaled reproduction of
 `shuoyang2/OnePiece@73e5102`: 4×128 HSTU with sampling-bias-corrected InfoNCE
 versus an otherwise identical causal Transformer. See the
 [experiment report](docs/ONEPIECE_REPRODUCTION_CN.md),
+[verified results](docs/ONEPIECE_RESULTS.md),
 [path-neutral runbook](docs/ONEPIECE_RUNBOOK.md), and
-[interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md). Formal metrics are published
-only after both runs pass manifest, frozen-row, and recomputed-metric checks.
+[interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md). Both runs passed manifest,
+78,921-row alignment, and recomputed-metric checks.
+
+| Architecture | Parameters | HR@10 | NDCG@10 | Score | Train time |
+|---|---:|---:|---:|---:|---:|
+| **HSTU 4×128** | 491,793,216 | **0.0977433** | **0.0522325** | **0.0663408** | 78.6 min |
+| Transformer 4×128 | 492,013,584 | 0.0939167 | 0.0501666 | 0.0637291 | 81.1 min |
+
+Under the controlled fixed-seed protocol, HSTU improves score by 4.10% over
+the otherwise identical Transformer. This interval covers the fixed evaluation
+population, not training-seed uncertainty. HSTU leads strongly for histories
+up to 80 events but trails by 0.93% in the 81+ slice; see the report for the
+scope and system-level comparison with the smaller SASRec-style baselines.
 
 ## Results at a glance
 
@@ -178,6 +190,7 @@ python offline_eval.py \
 ├── tests/                             # regression tests
 ├── metrics/offline_metrics*.json      # machine-readable metrics for four variants
 ├── metrics/four_way_comparison.json   # alignment, slices, deltas, interaction
+├── metrics/onepiece_architecture_comparison.json # six-run OnePiece audit
 └── docs/                              # results and resume-ready material
 ```
 

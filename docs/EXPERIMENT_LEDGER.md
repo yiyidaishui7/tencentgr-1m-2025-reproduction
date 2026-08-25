@@ -31,3 +31,20 @@ The bounded search adds exactly two variants, MM50 and no-MM50, to the already v
 | no-MM50 | 50 | disabled | complete | **0.0337045907** | **0.0172092099** | **0.0223227779** | Final BCE 0.2055; row-aligned metrics verified |
 
 The best measured point estimate is no-MM50: +7.65% versus MM101, +5.08% versus no-MM101, and +6.20% versus MM50. The overall interaction interval includes zero, and a stable causal or production-default claim would require additional training seeds. The current search intentionally stops at the fixed-seed 2×2 design.
+
+## OnePiece controlled architecture pair
+
+This pair shares the same frozen 78,921-user/660,000-candidate protocol,
+hidden size 128, four blocks, four heads, Batch 32, six epochs, AdamW schedule,
+sample-bias-corrected InfoNCE, seed, and exact retrieval implementation. The
+sequence encoder is the only intended factor.
+
+| Variant | Encoder | State | HR@10 | NDCG@10 | Score | Parameters |
+|---|---|---|---:|---:|---:|---:|
+| OnePiece HSTU 4×128 | HSTU | complete/verified | **0.0977433** | **0.0522325** | **0.0663408** | 491,793,216 |
+| OnePiece Transformer 4×128 | causal Transformer | complete/verified | 0.0939167 | 0.0501666 | 0.0637291 | 492,013,584 |
+
+HSTU improves the fixed-seed score by 0.0026117 (4.10%). The paired fixed-
+population interval is `[0.0017145, 0.0035089]`, but does not include training-
+seed uncertainty. Slice effects are heterogeneous: +58.65%, +33.53%, +7.07%,
+and -0.93% for history lengths 0–20, 21–50, 51–80, and 81+ respectively.

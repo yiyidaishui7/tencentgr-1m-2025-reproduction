@@ -17,6 +17,7 @@ This page is the final entry point for resume use, reproduction, and technical i
 - [Resource, runtime, and artifact budget (Chinese)](docs/RESOURCE_BUDGET_CN.md)
 - [End-to-end acceptance checklist](docs/ACCEPTANCE_CHECKLIST.md)
 - [OnePiece resource-scaled reproduction](docs/ONEPIECE_REPRODUCTION_CN.md)
+- [OnePiece verified six-run results](docs/ONEPIECE_RESULTS.md)
 - [OnePiece path-neutral runbook](docs/ONEPIECE_RUNBOOK.md)
 - [OnePiece resume draft](docs/ONEPIECE_RESUME_DRAFT_CN.md)
 - [OnePiece interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md)
