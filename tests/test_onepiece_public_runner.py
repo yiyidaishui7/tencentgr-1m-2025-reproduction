@@ -54,6 +54,9 @@ def test_public_runner_exposes_safe_scaling_overrides():
         "ONEPIECE_NUM_BLOCKS",
         "ONEPIECE_NUM_HEADS",
         "RUN_SIGNATURE",
+        "ONEPIECE_ENABLE_SID",
+        "ONEPIECE_SID_PATH",
+        "ONEPIECE_SID_CODEBOOK_SIZE",
     ):
         assert name in source
 

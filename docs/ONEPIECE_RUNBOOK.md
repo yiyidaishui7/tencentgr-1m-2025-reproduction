@@ -105,6 +105,22 @@ The runner hashes the effective architecture, seed, split, batch, schedule,
 and evaluation settings into `run_signature`; a resume checkpoint with a
 different signature is rejected.
 
+To run a frozen model-derived Semantic ID auxiliary-loss ablation, provide a
+NumPy `uint16` array with shape `[item_vocabulary + 1, 2]`. Row zero is the
+padding SID; every real item row must contain values in `[1, codebook_size]`.
+The array SHA-256 is included in the run signature and final protocol record.
+
+```bash
+ONEPIECE_ENABLE_SID=1 \
+ONEPIECE_SID_PATH=/evidence/sid_by_internal_id.npy \
+ONEPIECE_SID_CODEBOOK_SIZE=4096 \
+ONEPIECE_EXPERIMENT_ID=hstu_scaled_sid \
+python -u scripts/run_onepiece_formal.py
+```
+
+The no-SID reference and SID run must otherwise use the same architecture,
+seed, split, batch, optimizer, schedule, epochs and exact evaluation contract.
+
 ## 4. Acceptance gates
 
 Each completed output must contain `model.pt`, `offline_metrics.json`,

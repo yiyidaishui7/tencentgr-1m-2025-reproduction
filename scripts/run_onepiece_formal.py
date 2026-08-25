@@ -53,6 +53,14 @@ WARMUP_STEPS = int(os.environ.get("ONEPIECE_WARMUP_STEPS", "1000"))
 HIDDEN_UNITS = int(os.environ.get("ONEPIECE_HIDDEN_UNITS", "128"))
 NUM_BLOCKS = int(os.environ.get("ONEPIECE_NUM_BLOCKS", "4"))
 NUM_HEADS = int(os.environ.get("ONEPIECE_NUM_HEADS", "4"))
+ENABLE_SID = os.environ.get("ONEPIECE_ENABLE_SID", "0").strip().lower() in {"1", "true", "yes"}
+SID_CODEBOOK_SIZE = int(os.environ.get("ONEPIECE_SID_CODEBOOK_SIZE", "4096"))
+SID_PATH = (
+    Path(os.environ.get("ONEPIECE_SID_PATH", "")).expanduser() if ENABLE_SID else None
+)
+if ENABLE_SID and (SID_PATH is None or not SID_PATH.is_file()):
+    raise RuntimeError("ONEPIECE_SID_PATH must point to a frozen SID array when SID is enabled")
+SID_SHA256 = common.sha256(SID_PATH) if SID_PATH is not None else None
 if min(
     MAXLEN, BATCH_SIZE, EPOCHS, EVAL_BATCH_SIZE, CANDIDATE_BATCH_SIZE,
     LOG_EVERY, WARMUP_STEPS, HIDDEN_UNITS, NUM_BLOCKS, NUM_HEADS,
@@ -60,6 +68,8 @@ if min(
     raise RuntimeError("training dimensions and counts must be positive")
 if HIDDEN_UNITS % NUM_HEADS:
     raise RuntimeError("ONEPIECE_HIDDEN_UNITS must be divisible by ONEPIECE_NUM_HEADS")
+if SID_CODEBOOK_SIZE <= 0 or SID_CODEBOOK_SIZE > np.iinfo(np.uint16).max:
+    raise RuntimeError("invalid ONEPIECE_SID_CODEBOOK_SIZE")
 
 RUN_CONFIG = {
     "architecture": ARCHITECTURE,
@@ -75,6 +85,9 @@ RUN_CONFIG = {
     "hidden_units": HIDDEN_UNITS,
     "num_blocks": NUM_BLOCKS,
     "num_heads": NUM_HEADS,
+    "sid": ENABLE_SID,
+    "sid_codebook_size": SID_CODEBOOK_SIZE if ENABLE_SID else None,
+    "sid_sha256": SID_SHA256,
 }
 RUN_SIGNATURE = hashlib.sha256(
     json.dumps(RUN_CONFIG, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -144,7 +157,7 @@ class FeatureCollator:
 
 
 class FullTrainDataset(Dataset, FeatureCollator):
-    def __init__(self, count, item_count, item_features, user_features):
+    def __init__(self, count, item_count, item_features, user_features, sid_by_item=None):
         FeatureCollator.__init__(self, item_features, user_features)
         length = MAXLEN + 1
         self.user_ids = np.zeros(count, dtype=np.int32)
@@ -156,6 +169,7 @@ class FullTrainDataset(Dataset, FeatureCollator):
         self.item_counts = np.zeros(item_count + 1, dtype=np.int64)
         self.filled = 0
         self.item_log_p = None
+        self.sid_by_item = sid_by_item
 
     def append(self, row):
         if self.filled >= len(self.user_ids):
@@ -203,13 +217,18 @@ class FullTrainDataset(Dataset, FeatureCollator):
         for name in self.user_features:
             pos_feat[name] = torch.zeros_like(seq_feat[name])
         shape = seq.shape
+        sid = (
+            torch.from_numpy(np.asarray(self.sid_by_item[pos], dtype=np.int32))
+            if self.sid_by_item is not None
+            else torch.zeros((*shape, 2), dtype=torch.int32)
+        )
         return (
             torch.from_numpy(seq), torch.from_numpy(pos),
             torch.from_numpy(token_type.astype(np.int32)),
             torch.from_numpy(next_token_type.astype(np.int32)),
             torch.from_numpy(next_action_type.astype(np.int32)),
             seq_feat, pos_feat, torch.zeros(shape, dtype=torch.int32),
-            torch.zeros((*shape, 2), dtype=torch.int32),
+            sid,
             torch.from_numpy(self.item_log_p[pos]),
             torch.ones(shape, dtype=torch.float32),
         )
@@ -454,7 +473,18 @@ def main():
     validation_users = {int(value) + 1 for value in validation_subset.indices}
     if not set(map(int, contract["eval_user_reids"])).issubset(validation_users):
         raise RuntimeError("evaluation contract does not align with validation split")
-    train_dataset = FullTrainDataset(len(train_subset), item_count, item_features, user_features)
+    sid_by_item = None
+    if ENABLE_SID:
+        sid_by_item = np.load(SID_PATH, mmap_mode="r", allow_pickle=False)
+        if sid_by_item.shape != (item_count + 1, 2) or sid_by_item.dtype != np.uint16:
+            raise RuntimeError("SID array shape or dtype mismatch")
+        if bool(np.any(sid_by_item[0] != 0)):
+            raise RuntimeError("SID padding row must be zero")
+        if int(sid_by_item[1:].min()) < 1 or int(sid_by_item[1:].max()) > SID_CODEBOOK_SIZE:
+            raise RuntimeError("SID values fall outside the configured codebook")
+    train_dataset = FullTrainDataset(
+        len(train_subset), item_count, item_features, user_features, sid_by_item=sid_by_item
+    )
     eval_dataset = FormalEvalDataset(
         contract["eval_user_reids"], contract["eval_target_retrieval_ids"],
         contract["eval_prefix_lengths"], item_features, user_features,
@@ -484,6 +514,8 @@ def main():
     args.dropout_rate = 0.1
     args.log_interval = 1_000_000
     args.use_hstu = ARCHITECTURE == "hstu"
+    args.sid = ENABLE_SID
+    args.sid_codebook_size = SID_CODEBOOK_SIZE
     write_status("preparing", stage="model")
     model = BaselineModel(user_count, item_count, feature_statistics, feature_types, args).to(args.device)
     model._metric_counter = 100
@@ -593,7 +625,13 @@ def main():
             "architecture": "HSTU" if args.use_hstu else "Transformer", "num_blocks": args.num_blocks,
             "hidden_units": args.hidden_units, "num_heads": args.num_heads,
             "maxlen": args.maxlen,
-            "parameters": parameters, "loss": "sample-bias-corrected InfoNCE",
+            "parameters": parameters,
+            "loss": (
+                "sample-bias-corrected InfoNCE + SID1/SID2 cross-entropy"
+                if ENABLE_SID else "sample-bias-corrected InfoNCE"
+            ),
+            "sid_auxiliary": ENABLE_SID,
+            "sid_codebook_size": SID_CODEBOOK_SIZE if ENABLE_SID else None,
         },
         "training": {
             "epochs": EPOCHS, "batch_size": BATCH_SIZE,
@@ -610,6 +648,7 @@ def main():
             "contract_sha256": common.sha256(CONTRACT),
             "indexer_sha256": common.INDEXER_SHA256,
             "history_filtering": False,
+            "sid_mapping_sha256": SID_SHA256,
         },
     }
     model_path = OUT / "model.pt"
