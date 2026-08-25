@@ -78,6 +78,33 @@ python -u scripts/run_onepiece_formal.py
 The two JSON configs under `configs/` make the intended equality of all
 non-architecture settings explicit.
 
+For the capacity-scaling runs, keep the frozen data/evaluation protocol and
+set only the model dimensions plus a unique private output identifier:
+
+```bash
+CUDA_VISIBLE_DEVICES=0 \
+ONEPIECE_PHYSICAL_GPU=0 \
+ONEPIECE_ARCHITECTURE=hstu \
+ONEPIECE_EXPERIMENT_ID=hstu_8x256 \
+ONEPIECE_HIDDEN_UNITS=256 \
+ONEPIECE_NUM_BLOCKS=8 \
+ONEPIECE_NUM_HEADS=8 \
+python -u scripts/run_onepiece_formal.py
+
+CUDA_VISIBLE_DEVICES=1 \
+ONEPIECE_PHYSICAL_GPU=1 \
+ONEPIECE_ARCHITECTURE=hstu \
+ONEPIECE_EXPERIMENT_ID=hstu_8x512 \
+ONEPIECE_HIDDEN_UNITS=512 \
+ONEPIECE_NUM_BLOCKS=8 \
+ONEPIECE_NUM_HEADS=8 \
+python -u scripts/run_onepiece_formal.py
+```
+
+The runner hashes the effective architecture, seed, split, batch, schedule,
+and evaluation settings into `run_signature`; a resume checkpoint with a
+different signature is rejected.
+
 ## 4. Acceptance gates
 
 Each completed output must contain `model.pt`, `offline_metrics.json`,
@@ -109,4 +136,3 @@ python scripts/compare_onepiece_architectures.py \
 Do not interpret the result as an official leaderboard score. The comparison
 is valid only for the frozen local last-click protocol and does not estimate
 training-seed uncertainty.
-

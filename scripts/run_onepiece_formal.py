@@ -1,7 +1,9 @@
+import hashlib
 import json
 import math
 import os
 import pickle
+import re
 import sys
 import time
 from pathlib import Path
@@ -21,30 +23,62 @@ ROOT = common.ROOT
 HOME = common.HOME
 CONTRACT = common.CONTRACT
 INDEXER = common.INDEXER
-VARIANT = os.environ.get("ONEPIECE_VARIANT", "hstu").strip().lower()
-if VARIANT not in {"hstu", "transformer"}:
-    raise RuntimeError(f"unsupported ONEPIECE_VARIANT: {VARIANT}")
+ARCHITECTURE = os.environ.get(
+    "ONEPIECE_ARCHITECTURE", os.environ.get("ONEPIECE_VARIANT", "hstu")
+).strip().lower()
+if ARCHITECTURE not in {"hstu", "transformer"}:
+    raise RuntimeError(f"unsupported ONEPIECE_ARCHITECTURE: {ARCHITECTURE}")
 PHYSICAL_GPU = int(os.environ.get("ONEPIECE_PHYSICAL_GPU", "0"))
 if PHYSICAL_GPU < 0:
     raise RuntimeError(f"ONEPIECE_PHYSICAL_GPU must be non-negative, got {PHYSICAL_GPU}")
-VARIANT_PATHS = {
-    "hstu": ("hstu", "hstu_status.json"),
-    "transformer": ("transformer", "transformer_status.json"),
-}
-OUTPUT_NAME, STATUS_NAME = VARIANT_PATHS[VARIANT]
-OUT = ROOT / "o" / OUTPUT_NAME
-STATUS = ROOT / "l" / STATUS_NAME
+DEFAULT_EXPERIMENT_IDS = {"hstu": "hstu", "transformer": "transformer"}
+EXPERIMENT_ID = os.environ.get(
+    "ONEPIECE_EXPERIMENT_ID", DEFAULT_EXPERIMENT_IDS[ARCHITECTURE]
+).strip().lower()
+if not re.fullmatch(r"[a-z0-9_]{2,32}", EXPERIMENT_ID):
+    raise RuntimeError("ONEPIECE_EXPERIMENT_ID must match [a-z0-9_]{2,32}")
+OUT = ROOT / "o" / EXPERIMENT_ID
+STATUS = ROOT / "l" / f"{EXPERIMENT_ID}_status.json"
 ITEM_FEATURES = common.ITEM_FEATURES
 USER_FEATURES = common.USER_FEATURES
-SEED = common.SEED
+SEED = int(os.environ.get("ONEPIECE_TRAINING_SEED", str(common.SEED)))
 SPLIT_SEED = 2025
-MAXLEN = 101
-BATCH_SIZE = 32
-EPOCHS = 6
-EVAL_BATCH_SIZE = 128
-CANDIDATE_BATCH_SIZE = 8192
-LOG_EVERY = 500
-WARMUP_STEPS = 1000
+MAXLEN = int(os.environ.get("ONEPIECE_MAXLEN", "101"))
+BATCH_SIZE = int(os.environ.get("ONEPIECE_BATCH_SIZE", "32"))
+EPOCHS = int(os.environ.get("ONEPIECE_EPOCHS", "6"))
+EVAL_BATCH_SIZE = int(os.environ.get("ONEPIECE_EVAL_BATCH_SIZE", "128"))
+CANDIDATE_BATCH_SIZE = int(os.environ.get("ONEPIECE_CANDIDATE_BATCH_SIZE", "8192"))
+LOG_EVERY = int(os.environ.get("ONEPIECE_LOG_EVERY", "500"))
+WARMUP_STEPS = int(os.environ.get("ONEPIECE_WARMUP_STEPS", "1000"))
+HIDDEN_UNITS = int(os.environ.get("ONEPIECE_HIDDEN_UNITS", "128"))
+NUM_BLOCKS = int(os.environ.get("ONEPIECE_NUM_BLOCKS", "4"))
+NUM_HEADS = int(os.environ.get("ONEPIECE_NUM_HEADS", "4"))
+if min(
+    MAXLEN, BATCH_SIZE, EPOCHS, EVAL_BATCH_SIZE, CANDIDATE_BATCH_SIZE,
+    LOG_EVERY, WARMUP_STEPS, HIDDEN_UNITS, NUM_BLOCKS, NUM_HEADS,
+) <= 0:
+    raise RuntimeError("training dimensions and counts must be positive")
+if HIDDEN_UNITS % NUM_HEADS:
+    raise RuntimeError("ONEPIECE_HIDDEN_UNITS must be divisible by ONEPIECE_NUM_HEADS")
+
+RUN_CONFIG = {
+    "architecture": ARCHITECTURE,
+    "experiment_id": EXPERIMENT_ID,
+    "seed": SEED,
+    "split_seed": SPLIT_SEED,
+    "maxlen": MAXLEN,
+    "batch_size": BATCH_SIZE,
+    "epochs": EPOCHS,
+    "eval_batch_size": EVAL_BATCH_SIZE,
+    "candidate_batch_size": CANDIDATE_BATCH_SIZE,
+    "warmup_steps": WARMUP_STEPS,
+    "hidden_units": HIDDEN_UNITS,
+    "num_blocks": NUM_BLOCKS,
+    "num_heads": NUM_HEADS,
+}
+RUN_SIGNATURE = hashlib.sha256(
+    json.dumps(RUN_CONFIG, sort_keys=True, separators=(",", ":")).encode("utf-8")
+).hexdigest()
 
 
 def write_status(state, **values):
@@ -361,7 +395,8 @@ def save_resume(path, model, optimizer, scheduler, epoch, global_step, history):
             "global_step": global_step, "history": history,
             "contract_sha256": common.sha256(CONTRACT),
             "indexer_sha256": common.INDEXER_SHA256,
-            "variant": VARIANT,
+            "architecture": ARCHITECTURE,
+            "run_signature": RUN_SIGNATURE,
         },
         temporary,
     )
@@ -443,12 +478,12 @@ def main():
 
     args = common.make_args()
     args.maxlen = MAXLEN
-    args.hidden_units = 128
-    args.num_blocks = 4
-    args.num_heads = 4
+    args.hidden_units = HIDDEN_UNITS
+    args.num_blocks = NUM_BLOCKS
+    args.num_heads = NUM_HEADS
     args.dropout_rate = 0.1
     args.log_interval = 1_000_000
-    args.use_hstu = VARIANT == "hstu"
+    args.use_hstu = ARCHITECTURE == "hstu"
     write_status("preparing", stage="model")
     model = BaselineModel(user_count, item_count, feature_statistics, feature_types, args).to(args.device)
     model._metric_counter = 100
@@ -467,8 +502,10 @@ def main():
         checkpoint = torch.load(resume_path, map_location="cpu", weights_only=False)
         if checkpoint["contract_sha256"] != common.sha256(CONTRACT):
             raise RuntimeError("resume contract mismatch")
-        if checkpoint.get("variant", VARIANT) != VARIANT:
+        if checkpoint.get("architecture") != ARCHITECTURE:
             raise RuntimeError("resume architecture mismatch")
+        if checkpoint.get("run_signature") != RUN_SIGNATURE:
+            raise RuntimeError("resume configuration mismatch")
         model.load_state_dict(checkpoint["state_dict"])
         optimizer.load_state_dict(checkpoint["optimizer"])
         scheduler.load_state_dict(checkpoint["scheduler"])
@@ -526,7 +563,10 @@ def main():
                     "peak_memory_mib": torch.cuda.max_memory_allocated() / 1024**2,
                 }
                 print(json.dumps(record, sort_keys=True), flush=True)
-                write_status("training", gpu=PHYSICAL_GPU, architecture=VARIANT, **record)
+                write_status(
+                    "training", gpu=PHYSICAL_GPU, architecture=ARCHITECTURE,
+                    experiment_id=EXPERIMENT_ID, **record,
+                )
         epoch_record = {
             "epoch": epoch, "mean_loss": float(np.mean(losses)),
             "last_loss": losses[-1], "seconds": time.time() - epoch_started,
@@ -541,6 +581,8 @@ def main():
     )
     result = {
         "status": "pass", "metrics": overall, "slices": slices,
+        "experiment_id": EXPERIMENT_ID,
+        "run_signature": RUN_SIGNATURE,
         "evaluation_seconds": evaluation_seconds,
         "audit": {
             "training_users": len(train_dataset), "validation_users": len(validation_users),
@@ -549,7 +591,8 @@ def main():
         },
         "model": {
             "architecture": "HSTU" if args.use_hstu else "Transformer", "num_blocks": args.num_blocks,
-            "hidden_units": args.hidden_units, "maxlen": args.maxlen,
+            "hidden_units": args.hidden_units, "num_heads": args.num_heads,
+            "maxlen": args.maxlen,
             "parameters": parameters, "loss": "sample-bias-corrected InfoNCE",
         },
         "training": {
@@ -595,7 +638,10 @@ def main():
         os.chmod(path, 0o600)
     if resume_path.exists():
         resume_path.unlink()
-    write_status("complete", gpu=PHYSICAL_GPU, architecture=VARIANT, **result)
+    write_status(
+        "complete", gpu=PHYSICAL_GPU, architecture=ARCHITECTURE,
+        experiment_id=EXPERIMENT_ID, **result,
+    )
     print(json.dumps(result, sort_keys=True), flush=True)
 
 
@@ -603,5 +649,8 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as error:
-        write_status("failed", gpu=PHYSICAL_GPU, architecture=VARIANT, error=repr(error))
+        write_status(
+            "failed", gpu=PHYSICAL_GPU, architecture=ARCHITECTURE,
+            experiment_id=EXPERIMENT_ID, error=repr(error),
+        )
         raise
