@@ -7,6 +7,7 @@ import pytest
 
 from scripts.compare_onepiece_architectures import (
     load_predictions,
+    parse_named_directory,
     paired_effect,
     row_metrics,
     summarize,
@@ -46,14 +47,27 @@ def test_paired_effect_reports_mean_and_interval():
 
 
 def test_manifest_rejects_modified_file(tmp_path):
-    payload = tmp_path / "artifact.bin"
+    payload = tmp_path / "offline_predictions.npz"
     payload.write_bytes(b"before")
     digest = hashlib.sha256(payload.read_bytes()).hexdigest()
     (tmp_path / "SHA256SUMS").write_text(
-        f"{digest}  artifact.bin\n", encoding="utf-8"
+        f"{digest}  offline_predictions.npz\n", encoding="utf-8"
     )
     payload.write_bytes(b"after")
 
     with pytest.raises(RuntimeError, match="SHA-256 mismatch"):
         verify_manifest(tmp_path)
 
+
+def test_remote_checksum_manifest_and_named_directory(tmp_path):
+    payload = tmp_path / "offline_predictions.npz"
+    payload.write_bytes(b"predictions")
+    digest = hashlib.sha256(payload.read_bytes()).hexdigest()
+    (tmp_path / "remote_checksums.sha256").write_text(
+        f"{digest}  offline_predictions.npz\n", encoding="utf-8"
+    )
+
+    assert verify_manifest(tmp_path)["offline_predictions.npz"] == digest
+    name, directory = parse_named_directory(f"mm101={tmp_path}")
+    assert name == "mm101"
+    assert directory == tmp_path

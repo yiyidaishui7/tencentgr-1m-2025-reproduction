@@ -23,13 +23,25 @@ def sha256(path: Path) -> str:
 
 
 def verify_manifest(directory: Path) -> dict[str, str]:
-    manifest = directory / "SHA256SUMS"
+    manifests = [directory / "SHA256SUMS", directory / "remote_checksums.sha256"]
+    manifest = next((path for path in manifests if path.exists()), None)
+    if manifest is None:
+        raise RuntimeError(f"missing SHA-256 manifest in {directory}")
     expected: dict[str, str] = {}
     for line in manifest.read_text(encoding="utf-8").splitlines():
         digest, name = line.split(maxsplit=1)
         expected[name.strip()] = digest
-    actual = {name: sha256(directory / name) for name in expected}
-    mismatches = [name for name in expected if expected[name] != actual[name]]
+    required = "offline_predictions.npz"
+    if required not in expected or not (directory / required).is_file():
+        raise RuntimeError(f"prediction artifact is not covered by manifest in {directory}")
+    # Some archived ablations intentionally reference a shared checkpoint and
+    # therefore retain its remote checksum without duplicating model.pt.
+    actual = {
+        name: sha256(directory / name)
+        for name in expected
+        if (directory / name).is_file()
+    }
+    mismatches = [name for name in actual if expected[name] != actual[name]]
     if mismatches:
         raise RuntimeError(f"SHA-256 mismatch in {directory}: {mismatches}")
     return actual
@@ -81,24 +93,37 @@ def paired_effect(candidate: np.ndarray, reference: np.ndarray) -> dict[str, flo
     }
 
 
+def parse_named_directory(value: str) -> tuple[str, Path]:
+    if "=" not in value:
+        raise argparse.ArgumentTypeError("expected NAME=PATH")
+    name, raw_path = value.split("=", 1)
+    if not name or name in {"hstu", "transformer"}:
+        raise argparse.ArgumentTypeError(f"invalid baseline name: {name!r}")
+    return name, Path(raw_path)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--hstu", type=Path, required=True)
     parser.add_argument("--transformer", type=Path, required=True)
+    parser.add_argument(
+        "--baseline", type=parse_named_directory, action="append", default=[],
+        metavar="NAME=PATH", help="optional row-aligned baseline artifact directory",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
 
-    manifests = {
-        "hstu": verify_manifest(args.hstu),
-        "transformer": verify_manifest(args.transformer),
-    }
-    predictions = {
-        "hstu": load_predictions(args.hstu),
-        "transformer": load_predictions(args.transformer),
-    }
-    for key in ALIGNMENT_KEYS:
-        if not np.array_equal(predictions["hstu"][key], predictions["transformer"][key]):
-            raise RuntimeError(f"row alignment mismatch: {key}")
+    directories = {"hstu": args.hstu, "transformer": args.transformer}
+    for name, directory in args.baseline:
+        if name in directories:
+            raise RuntimeError(f"duplicate run name: {name}")
+        directories[name] = directory
+    manifests = {name: verify_manifest(directory) for name, directory in directories.items()}
+    predictions = {name: load_predictions(directory) for name, directory in directories.items()}
+    for run_name, arrays in predictions.items():
+        for key in ALIGNMENT_KEYS:
+            if not np.array_equal(predictions["hstu"][key], arrays[key]):
+                raise RuntimeError(f"row alignment mismatch for {key}: {run_name}")
 
     rows = {name: row_metrics(value) for name, value in predictions.items()}
     prefixes = predictions["hstu"]["prefix_lengths"]
@@ -126,6 +151,16 @@ def main() -> None:
             "ndcg_at_10": paired_effect(rows["transformer"][1], rows["hstu"][1]),
             "competition_score": paired_effect(rows["transformer"][2], rows["hstu"][2]),
         },
+        "onepiece_vs_baselines": {
+            f"{candidate}_minus_{reference}": {
+                "hit_rate_at_10": paired_effect(rows[candidate][0], rows[reference][0]),
+                "ndcg_at_10": paired_effect(rows[candidate][1], rows[reference][1]),
+                "competition_score": paired_effect(rows[candidate][2], rows[reference][2]),
+            }
+            for candidate in ("hstu", "transformer")
+            for reference in directories
+            if reference not in {"hstu", "transformer"}
+        },
         "slices": {
             slice_name: {
                 model_name: summarize(tuple(metric[mask] for metric in model_rows))
@@ -143,4 +178,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
