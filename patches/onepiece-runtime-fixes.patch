@@ -1,0 +1,29 @@
+diff --git a/code/dataset.py b/code/dataset.py
+index 7a304e7..a101dfb 100644
+--- a/code/dataset.py
++++ b/code/dataset.py
+@@ -3,9 +3,6 @@ import os
+ import random
+ 
+ import numpy
+-
+-print("正在安装 orjson...")
+-os.system('pip3 install orjson')
+ import orjson
+ import pickle
+ import struct
+diff --git a/code/model.py b/code/model.py
+index 9c636c7..beb44f9 100644
+--- a/code/model.py
++++ b/code/model.py
+@@ -1477,8 +1477,8 @@ class BaselineModel(torch.nn.Module):
+ 
+             # 计算HR@10 和 NDCG@10
+             hr10_last, ndcg10_last, score_last = calculate_score_fix(
+-                seq_embs, pos_embs, pos_seqs, next_action_type, loss_mask, self.dev
++                seq_embs, pos_embs, pos_seqs, next_action_type, loss_mask, args.interest_k, self.dev
+             )
+             hr10, ndcg10, score = calculate_score(
+-                seq_embs, pos_embs, pos_seqs, next_action_type, loss_mask, self.dev
++                seq_embs, pos_embs, pos_seqs, next_action_type, loss_mask, args.interest_k, self.dev
+             )

@@ -9,6 +9,15 @@ SafeTensors 发布和产物校验。
 
 > 本项目展示的是可复现离线实验，不是官方参赛提交，也不宣称任何比赛名次。
 
+## OnePiece 进阶复现
+
+仓库同时包含 `shuoyang2/OnePiece@73e5102` 的资源缩放复现：4×128 HSTU +
+采样偏差校正 InfoNCE，并以除编码器外配置完全相同的因果 Transformer 作架构对照。
+参见 [实验说明](docs/ONEPIECE_REPRODUCTION_CN.md)、
+[无私有路径运行手册](docs/ONEPIECE_RUNBOOK.md) 和
+[专项面试问答](docs/ONEPIECE_INTERVIEW_CN.md)。只有两条正式运行均通过清单哈希、
+冻结行对齐和指标重算后，才会回填正式数字。
+
 ## 核心结果
 
 | 变体 | maxlen | 多模态 | HR@10 | NDCG@10 | 综合分 | 最终 BCE |

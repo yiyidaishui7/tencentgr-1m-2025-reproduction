@@ -1,0 +1,18 @@
+{
+  "architecture": "HSTU",
+  "batch_size": 32,
+  "candidate_batch_size": 8192,
+  "dropout_rate": 0.1,
+  "epochs": 6,
+  "eval_batch_size": 128,
+  "hidden_units": 128,
+  "infonce_temperature": 0.02,
+  "learning_rate": 0.001,
+  "maxlen": 101,
+  "num_blocks": 4,
+  "num_heads": 4,
+  "optimizer": "AdamW",
+  "scheduler": "1000-step warmup + cosine decay",
+  "training_seed": 20250825,
+  "weight_decay": 0.00001
+}

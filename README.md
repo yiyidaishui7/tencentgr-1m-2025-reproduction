@@ -16,6 +16,16 @@ evaluation, ablation, SafeTensors publication, and verified artifact handling.
 > This is a reproducible offline study, not an official competition submission
 > or a claim of leaderboard placement.
 
+## Advanced OnePiece reproduction
+
+The repository also contains a resource-scaled reproduction of
+`shuoyang2/OnePiece@73e5102`: 4×128 HSTU with sampling-bias-corrected InfoNCE
+versus an otherwise identical causal Transformer. See the
+[experiment report](docs/ONEPIECE_REPRODUCTION_CN.md),
+[path-neutral runbook](docs/ONEPIECE_RUNBOOK.md), and
+[interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md). Formal metrics are published
+only after both runs pass manifest, frozen-row, and recomputed-metric checks.
+
 ## Results at a glance
 
 | Variant | maxlen | MM | HR@10 | NDCG@10 | Score | Final BCE |
@@ -164,6 +174,7 @@ python offline_eval.py \
 ├── experiment_plan.py                 # drift-resistant four-variant command plan
 ├── runtime_utils.py                   # device, seed, checkpoint portability
 ├── scripts/                           # download, audits, and four-way comparison CLI
+├── configs/ + patches/                # controlled OnePiece configs and upstream runtime patch
 ├── tests/                             # regression tests
 ├── metrics/offline_metrics*.json      # machine-readable metrics for four variants
 ├── metrics/four_way_comparison.json   # alignment, slices, deltas, interaction
