@@ -18,25 +18,28 @@ evaluation, ablation, SafeTensors publication, and verified artifact handling.
 
 ## Advanced OnePiece reproduction
 
-The repository also contains a resource-scaled reproduction of
-`shuoyang2/OnePiece@73e5102`: 4×128 HSTU with sampling-bias-corrected InfoNCE
-versus an otherwise identical causal Transformer. See the
-[experiment report](docs/ONEPIECE_REPRODUCTION_CN.md),
-[verified results](docs/ONEPIECE_RESULTS.md),
+The repository contains a resource-scaled reproduction of
+`shuoyang2/OnePiece@73e5102`. It starts with a controlled 4×128 HSTU versus
+causal-Transformer comparison, scales HSTU to 8×256 and 8×512, and then adds a
+frozen model-derived two-level semantic-ID auxiliary objective at the selected
+8×512 scale. See the [experiment report](docs/ONEPIECE_REPRODUCTION_CN.md),
+[capacity results](docs/ONEPIECE_SCALING_RESULTS.md),
+[SID ablation](docs/ONEPIECE_SID_RESULTS.md),
 [path-neutral runbook](docs/ONEPIECE_RUNBOOK.md), and
-[interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md). Both runs passed manifest,
-78,921-row alignment, and recomputed-metric checks.
+[interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md).
 
-| Architecture | Parameters | HR@10 | NDCG@10 | Score | Train time |
+| Variant | Parameters | HR@10 | NDCG@10 | Score | Train time |
 |---|---:|---:|---:|---:|---:|
-| **HSTU 4×128** | 491,793,216 | **0.0977433** | **0.0522325** | **0.0663408** | 78.6 min |
-| Transformer 4×128 | 492,013,584 | 0.0939167 | 0.0501666 | 0.0637291 | 81.1 min |
+| HSTU 4×128 | 491,793,216 | 0.0977433 | 0.0522325 | 0.0663408 | 78.6 min |
+| HSTU 8×256 | 793,326,288 | 0.1112251 | 0.0602908 | 0.0760805 | 118.6 min |
+| **HSTU 8×512** | 1,402,098,128 | **0.1208170** | **0.0665108** | **0.0833458** | 180.8 min |
+| HSTU 8×512 + SID | 1,423,127,274 | 0.1145576 | 0.0622381 | 0.0784571 | 225.5 min |
 
-Under the controlled fixed-seed protocol, HSTU improves score by 4.10% over
-the otherwise identical Transformer. This interval covers the fixed evaluation
-population, not training-seed uncertainty. HSTU leads strongly for histories
-up to 80 events but trails by 0.93% in the 81+ slice; see the report for the
-scope and system-level comparison with the smaller SASRec-style baselines.
+Scaling from 4×128 to 8×512 raises the fixed-seed score by 25.63%. The matched
+SID auxiliary ablation reduces it by 5.87%; its training loss jumps after epoch
+2, so this is a useful negative result and a loss-balancing diagnosis rather
+than evidence that semantic IDs are generally harmful. Every comparison uses
+the same 78,921 row-aligned users and exact 660k-candidate Top-10 protocol.
 
 ## Results at a glance
 
@@ -190,7 +193,9 @@ python offline_eval.py \
 ├── tests/                             # regression tests
 ├── metrics/offline_metrics*.json      # machine-readable metrics for four variants
 ├── metrics/four_way_comparison.json   # alignment, slices, deltas, interaction
-├── metrics/onepiece_architecture_comparison.json # six-run OnePiece audit
+├── metrics/onepiece_architecture_comparison.json # controlled encoder audit
+├── metrics/onepiece_scaling_comparison.json      # 4×128 / 8×256 / 8×512
+├── metrics/onepiece_sid_comparison.json          # matched SID ablation
 └── docs/                              # results and resume-ready material
 ```
 

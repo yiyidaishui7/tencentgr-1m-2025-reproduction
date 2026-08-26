@@ -1,0 +1,272 @@
+{
+  "comparisons": {
+    "hstu_sid_minus_hstu_no_sid": {
+      "competition_score": {
+        "mean_delta": -0.004888624054443762,
+        "normal_95_high": -0.003927938872586465,
+        "normal_95_low": -0.00584930923630106
+      },
+      "hit_rate_at_10": {
+        "mean_delta": -0.006259423980942968,
+        "normal_95_high": -0.00469719672289097,
+        "normal_95_low": -0.007821651238994967
+      },
+      "ndcg_at_10": {
+        "mean_delta": -0.004272757420799191,
+        "normal_95_high": -0.003481533486595512,
+        "normal_95_low": -0.0050639813550028695
+      },
+      "relative_competition_score": -0.05865474553652994
+    }
+  },
+  "manifests": {
+    "hstu_no_sid": {
+      "config.json": "dd271269d752e342cbee6df7bdfcc255a1c5e3ce45056a59010aa09def9abd25",
+      "history.json": "3c37f2c3084a9bb2b4d91703892eafe4b9807dccb117cb7f7c59af0a92f7e420",
+      "model.pt": "2d9fa1da06c06b1789141c504c3ff987f7e25b0b73b065afb2e157093e60517f",
+      "offline_metrics.json": "3a6a70b79ab1e02e7ab6f5e99361423ab09d94037d59461af42739be98b555e7",
+      "offline_predictions.npz": "80407b78e72665f4cf21e69883d572f48c14e904418b8b3a5ac95f4f93d3932f"
+    },
+    "hstu_sid": {
+      "config.json": "21c93812c6ef87b6a1a3b8f537235e1f1fdb234bc4c7fba964bfa95ad42ebb05",
+      "history.json": "0762551a2b899bff8cc89cc1366cd0b3c8cdffadb15e8deb5d7afc770507270d",
+      "model.pt": "f2d84688091130978aa50b8c90a47767ee34b1b30fcfe0e84cd949c5a1cb0183",
+      "offline_metrics.json": "25e7e67e818b437f84a64d4823b4aec3eaebd1ec53bde6053dab33b33f353826",
+      "offline_predictions.npz": "9a7519266a25656980b3342c192b050f1b1477c23763edd23dd583fad81cc76b"
+    }
+  },
+  "metadata": {
+    "hstu_no_sid": {
+      "experiment_id": "s8512",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1402098128
+      },
+      "resources": {
+        "device": "NVIDIA H200",
+        "peak_memory_mib": 26787.39990234375,
+        "physical_gpu": 5,
+        "wall_seconds": 10947.571495056152
+      },
+      "run_signature": "aec3f23d055f223fee76a1e8cfc34fcbacb0ee36e2a125d79fa9d26fce08a11a",
+      "training": {
+        "batch_size": 32,
+        "epochs": 6,
+        "global_steps": 169056,
+        "history": [
+          {
+            "epoch": 1,
+            "last_loss": 4.644472599029541,
+            "learning_rate": 0.000936854530302438,
+            "mean_loss": 5.50980834868535,
+            "seconds": 2121.0238330364227
+          },
+          {
+            "epoch": 2,
+            "last_loss": 4.534484386444092,
+            "learning_rate": 0.0007553768599656601,
+            "mean_loss": 4.604975591340165,
+            "seconds": 1718.5087792873383
+          },
+          {
+            "epoch": 3,
+            "last_loss": 4.4438395500183105,
+            "learning_rate": 0.0005046733632095709,
+            "mean_loss": 4.379342599137813,
+            "seconds": 1709.8913309574127
+          },
+          {
+            "epoch": 4,
+            "last_loss": 4.246964931488037,
+            "learning_rate": 0.0002527030428642824,
+            "mean_loss": 4.245290812843229,
+            "seconds": 1710.0327458381653
+          },
+          {
+            "epoch": 5,
+            "last_loss": 4.183567523956299,
+            "learning_rate": 6.776830370282949e-05,
+            "mean_loss": 4.162500186180743,
+            "seconds": 1710.4972140789032
+          },
+          {
+            "epoch": 6,
+            "last_loss": 4.083395481109619,
+            "learning_rate": 0.0,
+            "mean_loss": 4.121695288206825,
+            "seconds": 1717.6272161006927
+          }
+        ],
+        "seconds": 10850.640544652939
+      }
+    },
+    "hstu_sid": {
+      "experiment_id": "z512",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE + SID1/SID2 cross-entropy",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1423127274,
+        "sid_auxiliary": true,
+        "sid_codebook_size": 4096
+      },
+      "resources": {
+        "device": "NVIDIA H200",
+        "peak_memory_mib": 27192.3916015625,
+        "physical_gpu": 4,
+        "wall_seconds": 13631.096971035004
+      },
+      "run_signature": "25b41eaef205d687ba94268db93eb2aa734179f060740e7a2fcf52761da437ea",
+      "training": {
+        "batch_size": 32,
+        "epochs": 6,
+        "global_steps": 169056,
+        "history": [
+          {
+            "epoch": 1,
+            "last_loss": 13.315412521362305,
+            "learning_rate": 0.000936854530302438,
+            "mean_loss": 14.65180946029363,
+            "seconds": 2239.0238938331604
+          },
+          {
+            "epoch": 2,
+            "last_loss": 12.922083854675293,
+            "learning_rate": 0.0007553768599656601,
+            "mean_loss": 13.106494887080943,
+            "seconds": 2227.582585811615
+          },
+          {
+            "epoch": 3,
+            "last_loss": 41.16960525512695,
+            "learning_rate": 0.0005046733632095709,
+            "mean_loss": 24.908121110498058,
+            "seconds": 2224.6422424316406
+          },
+          {
+            "epoch": 4,
+            "last_loss": 44.358055114746094,
+            "learning_rate": 0.0002527030428642824,
+            "mean_loss": 42.48170370733379,
+            "seconds": 2224.334882736206
+          },
+          {
+            "epoch": 5,
+            "last_loss": 43.70529556274414,
+            "learning_rate": 6.776830370282949e-05,
+            "mean_loss": 43.79693902885961,
+            "seconds": 2222.551697254181
+          },
+          {
+            "epoch": 6,
+            "last_loss": 44.115509033203125,
+            "learning_rate": 0.0,
+            "mean_loss": 43.85891191584356,
+            "seconds": 2223.8676199913025
+          }
+        ],
+        "seconds": 13527.21106672287
+      }
+    }
+  },
+  "overall": {
+    "hstu_no_sid": {
+      "competition_score": 0.08334575505743427,
+      "evaluated_users": 78921,
+      "hit_rate_at_10": 0.12081701955119677,
+      "hits": 9535,
+      "ndcg_at_10": 0.06651083912545402
+    },
+    "hstu_sid": {
+      "competition_score": 0.07845713100299051,
+      "evaluated_users": 78921,
+      "hit_rate_at_10": 0.1145575955702538,
+      "hits": 9041,
+      "ndcg_at_10": 0.06223808170465484
+    }
+  },
+  "reference": "hstu_no_sid",
+  "row_alignment": {
+    "keys": [
+      "user_reids",
+      "target_retrieval_ids",
+      "prefix_lengths"
+    ],
+    "rows": 78921
+  },
+  "slices": {
+    "history_0_20": {
+      "hstu_no_sid": {
+        "competition_score": 0.09006404267008682,
+        "evaluated_users": 1125,
+        "hit_rate_at_10": 0.12711111111111112,
+        "hits": 143,
+        "ndcg_at_10": 0.07341970757339474
+      },
+      "hstu_sid": {
+        "competition_score": 0.08623573564503158,
+        "evaluated_users": 1125,
+        "hit_rate_at_10": 0.12622222222222224,
+        "hits": 142,
+        "ndcg_at_10": 0.0682707924002068
+      }
+    },
+    "history_21_50": {
+      "hstu_no_sid": {
+        "competition_score": 0.10169619148852964,
+        "evaluated_users": 4366,
+        "hit_rate_at_10": 0.14704535043518094,
+        "hits": 642,
+        "ndcg_at_10": 0.08132193167191817
+      },
+      "hstu_sid": {
+        "competition_score": 0.10103662140178232,
+        "evaluated_users": 4366,
+        "hit_rate_at_10": 0.1477324782409528,
+        "hits": 645,
+        "ndcg_at_10": 0.08005732340157527
+      }
+    },
+    "history_51_80": {
+      "hstu_no_sid": {
+        "competition_score": 0.09397782046558978,
+        "evaluated_users": 23339,
+        "hit_rate_at_10": 0.1363383178370967,
+        "hits": 3182,
+        "ndcg_at_10": 0.07494629266099972
+      },
+      "hstu_sid": {
+        "competition_score": 0.08834958127279416,
+        "evaluated_users": 23339,
+        "hit_rate_at_10": 0.12909721924675435,
+        "hits": 3013,
+        "ndcg_at_10": 0.07004267145840624
+      }
+    },
+    "history_81_plus": {
+      "hstu_no_sid": {
+        "competition_score": 0.07664159954879324,
+        "evaluated_users": 50091,
+        "hit_rate_at_10": 0.11115769299874229,
+        "hits": 5568,
+        "ndcg_at_10": 0.061134369158236425
+      },
+      "hstu_sid": {
+        "competition_score": 0.0717051619436711,
+        "evaluated_users": 50091,
+        "hit_rate_at_10": 0.1046295741750015,
+        "hits": 5241,
+        "ndcg_at_10": 0.056913034709305275
+      }
+    }
+  },
+  "status": "pass"
+}

@@ -18,6 +18,8 @@ This page is the final entry point for resume use, reproduction, and technical i
 - [End-to-end acceptance checklist](docs/ACCEPTANCE_CHECKLIST.md)
 - [OnePiece resource-scaled reproduction](docs/ONEPIECE_REPRODUCTION_CN.md)
 - [OnePiece verified six-run results](docs/ONEPIECE_RESULTS.md)
+- [OnePiece HSTU capacity-scaling results](docs/ONEPIECE_SCALING_RESULTS.md)
+- [OnePiece semantic-ID ablation](docs/ONEPIECE_SID_RESULTS.md)
 - [OnePiece path-neutral runbook](docs/ONEPIECE_RUNBOOK.md)
 - [OnePiece resume draft](docs/ONEPIECE_RESUME_DRAFT_CN.md)
 - [OnePiece interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md)
@@ -29,5 +31,6 @@ This page is the final entry point for resume use, reproduction, and technical i
 - Dataset source: <https://huggingface.co/datasets/TAAC2025/TencentGR-1M>
 - Drift-resistant 2x2 plan generator: `python scripts/plan_2x2_experiments.py --help`
 - OnePiece HSTU/Transformer runner: `python scripts/run_onepiece_formal.py`
+- Machine-readable scaling and SID comparisons: `metrics/onepiece_scaling_comparison.json` and `metrics/onepiece_sid_comparison.json`
 
 The full private evidence archive is intentionally not linked from the public repository. It contains restricted raw artifacts, PyTorch checkpoints, predictions, and execution logs. Public claims must remain reproducible from the documented protocol and published aggregate evidence.

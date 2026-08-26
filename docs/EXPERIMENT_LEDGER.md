@@ -48,3 +48,28 @@ HSTU improves the fixed-seed score by 0.0026117 (4.10%). The paired fixed-
 population interval is `[0.0017145, 0.0035089]`, but does not include training-
 seed uncertainty. Slice effects are heterogeneous: +58.65%, +33.53%, +7.07%,
 and -0.93% for history lengths 0–20, 21–50, 51–80, and 81+ respectively.
+
+## OnePiece capacity scaling and SID follow-up
+
+The follow-up freezes the same 78,921 rows, 660,000 candidates, six-epoch
+InfoNCE protocol and seed. Capacity changes jointly alter depth and width; the
+SID row adds only the frozen two-level semantic-ID auxiliary objective at the
+selected 8×512 scale.
+
+| Variant | State | HR@10 | NDCG@10 | Score | Evidence note |
+|---|---|---:|---:|---:|---|
+| HSTU 4×128 | complete/verified | 0.0977433 | 0.0522325 | 0.0663408 | Frozen reference |
+| HSTU 8×256 | complete/verified | 0.1112251 | 0.0602908 | 0.0760805 | +14.68% vs 4×128 |
+| HSTU 8×512 | complete/verified | **0.1208170** | **0.0665108** | **0.0833458** | +25.63% vs 4×128; selected for SID |
+| HSTU 8×512 + SID | complete/verified | 0.1145576 | 0.0622381 | 0.0784571 | -5.87% vs matched no-SID run |
+
+Evidence milestones:
+
+- Both scaling checkpoints, predictions, metrics and logs passed SHA-256 and
+  frozen-row verification; all private run outputs were cleaned after download.
+- The SID mapping covers 4,783,154 items with 2,533,113 unique two-level pairs,
+  and is bound to the selected checkpoint by source and mapping hashes.
+- SID loss rises sharply after epoch 2, so the negative effect is recorded as
+  an auxiliary-loss/codebook diagnosis, not a general claim against semantic IDs.
+- The private Hugging Face archive passed read-back verification at commit
+  `2a77747137d9a9f1222d358342f1e5054982ca6a`: 103 files and 18,453,267,626 bytes.
