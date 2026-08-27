@@ -25,6 +25,7 @@ frozen model-derived two-level semantic-ID auxiliary objective at the selected
 8×512 scale. See the [experiment report](docs/ONEPIECE_REPRODUCTION_CN.md),
 [capacity results](docs/ONEPIECE_SCALING_RESULTS.md),
 [SID ablation](docs/ONEPIECE_SID_RESULTS.md),
+[alignment results](docs/ONEPIECE_ALIGNMENT_RESULTS.md),
 [path-neutral runbook](docs/ONEPIECE_RUNBOOK.md), and
 [interview Q&A](docs/ONEPIECE_INTERVIEW_CN.md).
 
@@ -33,12 +34,14 @@ frozen model-derived two-level semantic-ID auxiliary objective at the selected
 | HSTU 4×128 | 491,793,216 | 0.0977433 | 0.0522325 | 0.0663408 | 78.6 min |
 | HSTU 8×256 | 793,326,288 | 0.1112251 | 0.0602908 | 0.0760805 | 118.6 min |
 | **HSTU 8×512** | 1,402,098,128 | **0.1208170** | **0.0665108** | **0.0833458** | 180.8 min |
-| HSTU 8×512 + SID | 1,423,127,274 | 0.1145576 | 0.0622381 | 0.0784571 | 225.5 min |
+| HSTU 8×512 + old SID | 1,423,127,274 | 0.1145576 | 0.0622381 | 0.0784571 | 225.5 min |
+| **HSTU 8×512 + collision-free SID (0.02)** | 1,423,127,274 | 0.1207663 | **0.0666985** | **0.0834596** | 226.7 min |
+| HSTU 8×512 + collision-free SID (0.05) | 1,423,127,274 | 0.1199427 | 0.0660450 | 0.0827533 | 240.2 min |
 
-Scaling from 4×128 to 8×512 raises the fixed-seed score by 25.63%. The matched
-SID auxiliary ablation reduces it by 5.87%; its training loss jumps after epoch
-2, so this is a useful negative result and a loss-balancing diagnosis rather
-than evidence that semantic IDs are generally harmful. Every comparison uses
+Scaling from 4×128 to 8×512 raises the fixed-seed score by 25.63%. The first
+colliding, unweighted SID ablation regressed 5.87%; collision-free IDs plus a
+0.02 linearly warmed auxiliary weight recover that regression and finish 0.14%
+above no SID, with a paired interval that crosses zero. Every comparison uses
 the same 78,921 row-aligned users and exact 660k-candidate Top-10 protocol.
 
 ## Results at a glance

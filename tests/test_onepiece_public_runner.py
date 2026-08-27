@@ -57,8 +57,23 @@ def test_public_runner_exposes_safe_scaling_overrides():
         "ONEPIECE_ENABLE_SID",
         "ONEPIECE_SID_PATH",
         "ONEPIECE_SID_CODEBOOK_SIZE",
+        "ONEPIECE_SID_LOSS_WEIGHT",
+        "ONEPIECE_SID_LOSS_WARMUP_STEPS",
+        "ONEPIECE_SID_LOSS_DELAY_STEPS",
+        "ONEPIECE_ENABLE_BEAM_EVAL",
+        "ONEPIECE_BEAM_SIZE",
+        "ONEPIECE_BEAM_TOP_K",
     ):
         assert name in source
+
+
+def test_sid_alignment_configs_only_change_auxiliary_weight():
+    low = json.loads((ROOT / "configs" / "onepiece_hstu_8x512_sid_002.json").read_text())
+    high = json.loads((ROOT / "configs" / "onepiece_hstu_8x512_sid_005.json").read_text())
+    assert low.pop("sid_loss_weight") == 0.02
+    assert high.pop("sid_loss_weight") == 0.05
+    assert low == high
+    assert low["sid_mapping_sha256"] == "cfe6dea013a826f336c91cf4415b3bc251399385a381f021ffd7fec4aa09f82d"
 
 
 def test_common_configuration_requires_path_neutral_environment():

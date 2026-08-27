@@ -50,6 +50,7 @@ EVAL_BATCH_SIZE = int(os.environ.get("ONEPIECE_EVAL_BATCH_SIZE", "128"))
 CANDIDATE_BATCH_SIZE = int(os.environ.get("ONEPIECE_CANDIDATE_BATCH_SIZE", "8192"))
 LOG_EVERY = int(os.environ.get("ONEPIECE_LOG_EVERY", "500"))
 WARMUP_STEPS = int(os.environ.get("ONEPIECE_WARMUP_STEPS", "1000"))
+LEARNING_RATE = float(os.environ.get("ONEPIECE_LEARNING_RATE", "1e-3"))
 HIDDEN_UNITS = int(os.environ.get("ONEPIECE_HIDDEN_UNITS", "128"))
 NUM_BLOCKS = int(os.environ.get("ONEPIECE_NUM_BLOCKS", "4"))
 NUM_HEADS = int(os.environ.get("ONEPIECE_NUM_HEADS", "4"))
@@ -61,6 +62,12 @@ SID_PATH = (
 if ENABLE_SID and (SID_PATH is None or not SID_PATH.is_file()):
     raise RuntimeError("ONEPIECE_SID_PATH must point to a frozen SID array when SID is enabled")
 SID_SHA256 = common.sha256(SID_PATH) if SID_PATH is not None else None
+SID_LOSS_WEIGHT = float(os.environ.get("ONEPIECE_SID_LOSS_WEIGHT", "1.0"))
+SID_LOSS_WARMUP_STEPS = int(os.environ.get("ONEPIECE_SID_LOSS_WARMUP_STEPS", "0"))
+SID_LOSS_DELAY_STEPS = int(os.environ.get("ONEPIECE_SID_LOSS_DELAY_STEPS", "0"))
+ENABLE_BEAM_EVAL = os.environ.get("ONEPIECE_ENABLE_BEAM_EVAL", "0").strip().lower() in {"1", "true", "yes"}
+BEAM_SIZE = int(os.environ.get("ONEPIECE_BEAM_SIZE", "20"))
+BEAM_TOP_K = int(os.environ.get("ONEPIECE_BEAM_TOP_K", "384"))
 if min(
     MAXLEN, BATCH_SIZE, EPOCHS, EVAL_BATCH_SIZE, CANDIDATE_BATCH_SIZE,
     LOG_EVERY, WARMUP_STEPS, HIDDEN_UNITS, NUM_BLOCKS, NUM_HEADS,
@@ -70,6 +77,14 @@ if HIDDEN_UNITS % NUM_HEADS:
     raise RuntimeError("ONEPIECE_HIDDEN_UNITS must be divisible by ONEPIECE_NUM_HEADS")
 if SID_CODEBOOK_SIZE <= 0 or SID_CODEBOOK_SIZE > np.iinfo(np.uint16).max:
     raise RuntimeError("invalid ONEPIECE_SID_CODEBOOK_SIZE")
+if LEARNING_RATE <= 0:
+    raise RuntimeError("ONEPIECE_LEARNING_RATE must be positive")
+if SID_LOSS_WEIGHT < 0 or SID_LOSS_WARMUP_STEPS < 0 or SID_LOSS_DELAY_STEPS < 0:
+    raise RuntimeError("SID loss scheduling values must be non-negative")
+if ENABLE_BEAM_EVAL and not ENABLE_SID:
+    raise RuntimeError("beam evaluation requires SID training")
+if BEAM_SIZE <= 0 or BEAM_TOP_K < 10:
+    raise RuntimeError("invalid beam-search dimensions")
 
 RUN_CONFIG = {
     "architecture": ARCHITECTURE,
@@ -82,12 +97,19 @@ RUN_CONFIG = {
     "eval_batch_size": EVAL_BATCH_SIZE,
     "candidate_batch_size": CANDIDATE_BATCH_SIZE,
     "warmup_steps": WARMUP_STEPS,
+    "learning_rate": LEARNING_RATE,
     "hidden_units": HIDDEN_UNITS,
     "num_blocks": NUM_BLOCKS,
     "num_heads": NUM_HEADS,
     "sid": ENABLE_SID,
     "sid_codebook_size": SID_CODEBOOK_SIZE if ENABLE_SID else None,
     "sid_sha256": SID_SHA256,
+    "sid_loss_weight": SID_LOSS_WEIGHT if ENABLE_SID else None,
+    "sid_loss_warmup_steps": SID_LOSS_WARMUP_STEPS if ENABLE_SID else None,
+    "sid_loss_delay_steps": SID_LOSS_DELAY_STEPS if ENABLE_SID else None,
+    "beam_eval": ENABLE_BEAM_EVAL,
+    "beam_size": BEAM_SIZE if ENABLE_BEAM_EVAL else None,
+    "beam_top_k": BEAM_TOP_K if ENABLE_BEAM_EVAL else None,
 }
 RUN_SIGNATURE = hashlib.sha256(
     json.dumps(RUN_CONFIG, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -357,10 +379,22 @@ def metrics(topk, targets, prefixes):
     return result, slices
 
 
-def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_features):
+def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_features, sid_by_item=None):
     started = time.time()
     write_status("evaluation", stage="candidates", progress=0)
     candidates = candidate_embeddings(model, internal_ids, candidate_features)
+    pair_to_candidate = None
+    if ENABLE_BEAM_EVAL:
+        if sid_by_item is None:
+            raise RuntimeError("beam evaluation is missing the frozen SID mapping")
+        candidate_rows = np.flatnonzero(internal_ids > 0)
+        candidate_sid = np.asarray(sid_by_item[internal_ids[candidate_rows]], dtype=np.int64)
+        pair_width = SID_CODEBOOK_SIZE + 1
+        pair_keys = candidate_sid[:, 0] * pair_width + candidate_sid[:, 1]
+        if int(len(np.unique(pair_keys))) != len(pair_keys):
+            raise RuntimeError("candidate SID pairs are not unique")
+        pair_to_candidate = np.full(pair_width * pair_width, -1, dtype=np.int32)
+        pair_to_candidate[pair_keys] = candidate_rows.astype(np.int32)
     loader = DataLoader(
         eval_dataset, batch_size=EVAL_BATCH_SIZE, shuffle=False,
         num_workers=0, collate_fn=eval_dataset.collate,
@@ -369,6 +403,9 @@ def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_feature
     target_rows = []
     prefix_rows = []
     user_rows = []
+    beam_topk_rows = []
+    beam_valid_counts = []
+    beam_target_generated = []
     model.eval()
     model.set_mode("infer")
     with torch.no_grad(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
@@ -377,6 +414,49 @@ def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_feature
             scores = query.float() @ candidates.T
             indices = torch.topk(scores, k=10, dim=1).indices.cpu().numpy()
             topk_rows.append(retrieval_ids[indices])
+            if ENABLE_BEAM_EVAL:
+                (
+                    log_feats, _attention_mask, _mlp, sid_logfeats,
+                    _pos, all_seq_logfeats, attention_mask_infer,
+                ) = model.log2feats(seq.to(model.dev), token_type.to(model.dev), seq_feat, True)
+                del log_feats
+                generated, _generated_scores = model.beamsearch_sid(
+                    sid_logfeats, all_seq_logfeats, attention_mask_infer,
+                    top_k=BEAM_SIZE, top_k_2=BEAM_TOP_K,
+                )
+                generated_np = generated.cpu().numpy().astype(np.int64, copy=False)
+                generated_keys = (
+                    generated_np[:, :, 0] * (SID_CODEBOOK_SIZE + 1)
+                    + generated_np[:, :, 1]
+                )
+                generated_candidates = pair_to_candidate[generated_keys]
+                valid = generated_candidates >= 0
+                safe_candidates = np.maximum(generated_candidates, 0)
+                gather_index = torch.from_numpy(safe_candidates).to(
+                    device=scores.device, dtype=torch.long
+                )
+                restricted_scores = torch.gather(scores, 1, gather_index)
+                restricted_scores.masked_fill_(
+                    ~torch.from_numpy(valid).to(scores.device), -torch.inf
+                )
+                restricted_positions = torch.topk(
+                    restricted_scores, k=10, dim=1
+                ).indices.cpu().numpy()
+                selected_candidates = np.take_along_axis(
+                    generated_candidates, restricted_positions, axis=1
+                )
+                selected_valid = selected_candidates >= 0
+                beam_topk = np.full(
+                    selected_candidates.shape, np.iinfo(np.uint64).max, dtype=np.uint64
+                )
+                beam_topk[selected_valid] = retrieval_ids[selected_candidates[selected_valid]]
+                beam_topk_rows.append(beam_topk)
+                valid_counts = valid.sum(axis=1).astype(np.int32)
+                beam_valid_counts.append(valid_counts)
+                target_rows_for_batch = np.asarray(targets, dtype=np.int64)
+                beam_target_generated.append(
+                    (generated_candidates == target_rows_for_batch[:, None]).any(axis=1)
+                )
             target_rows.append(targets)
             prefix_rows.append(prefixes)
             user_rows.append(users)
@@ -390,12 +470,32 @@ def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_feature
     prefixes = np.concatenate(prefix_rows)
     users = np.concatenate(user_rows)
     overall, slices = metrics(topk, targets, prefixes)
-    return overall, slices, {
+    predictions = {
         "topk_retrieval_ids": topk,
         "target_retrieval_ids": targets,
         "prefix_lengths": prefixes,
         "user_reids": users,
-    }, time.time() - started
+    }
+    beam_result = None
+    if ENABLE_BEAM_EVAL:
+        beam_topk = np.concatenate(beam_topk_rows)
+        valid_counts = np.concatenate(beam_valid_counts)
+        target_generated = np.concatenate(beam_target_generated)
+        beam_overall, beam_slices = metrics(beam_topk, targets, prefixes)
+        predictions["beam_topk_retrieval_ids"] = beam_topk
+        predictions["beam_valid_candidate_counts"] = valid_counts
+        predictions["beam_target_generated"] = target_generated
+        beam_result = {
+            "metrics": beam_overall,
+            "slices": beam_slices,
+            "beam_size": BEAM_SIZE,
+            "generated_pairs": BEAM_TOP_K,
+            "mean_legal_candidate_count": float(valid_counts.mean()),
+            "users_with_at_least_10_legal_candidates": int((valid_counts >= 10).sum()),
+            "legal_candidate_coverage_at_10": float((valid_counts >= 10).mean()),
+            "target_generation_recall": float(target_generated.mean()),
+        }
+    return overall, slices, predictions, time.time() - started, beam_result
 
 
 def scheduler_factor(step, total_steps):
@@ -403,6 +503,17 @@ def scheduler_factor(step, total_steps):
         return (step + 1) / WARMUP_STEPS
     progress = (step - WARMUP_STEPS) / max(total_steps - WARMUP_STEPS, 1)
     return 0.5 * (1.0 + math.cos(math.pi * min(max(progress, 0.0), 1.0)))
+
+
+def sid_loss_weight_at(step):
+    if not ENABLE_SID or SID_LOSS_WEIGHT == 0:
+        return 0.0
+    if step < SID_LOSS_DELAY_STEPS:
+        return 0.0
+    if SID_LOSS_WARMUP_STEPS == 0:
+        return SID_LOSS_WEIGHT
+    progress = (step - SID_LOSS_DELAY_STEPS + 1) / SID_LOSS_WARMUP_STEPS
+    return SID_LOSS_WEIGHT * min(max(progress, 0.0), 1.0)
 
 
 def save_resume(path, model, optimizer, scheduler, epoch, global_step, history):
@@ -504,7 +615,17 @@ def main():
     )
 
     sys.path.insert(0, str(common.SOURCE_DIR))
-    from model import BaselineModel
+    import model as model_module
+
+    BaselineModel = model_module.BaselineModel
+    sid_weight_state = {"value": 1.0}
+    if ENABLE_SID:
+        original_sid_loss = model_module.sid_loss_func
+
+        def scheduled_sid_loss(*loss_args, **loss_kwargs):
+            return sid_weight_state["value"] * original_sid_loss(*loss_args, **loss_kwargs)
+
+        model_module.sid_loss_func = scheduled_sid_loss
 
     args = common.make_args()
     args.maxlen = MAXLEN
@@ -519,7 +640,7 @@ def main():
     write_status("preparing", stage="model")
     model = BaselineModel(user_count, item_count, feature_statistics, feature_types, args).to(args.device)
     model._metric_counter = 100
-    optimizer = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-5)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=1e-5)
     steps_per_epoch = len(train_dataset) // BATCH_SIZE
     total_steps = steps_per_epoch * EPOCHS
     scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -557,6 +678,9 @@ def main():
         model.train()
         model.set_mode("train")
         losses = []
+        sid1_losses = []
+        sid2_losses = []
+        sid_weights = []
         write_status(
             "training", epoch=epoch, epochs=EPOCHS, step=0,
             steps=len(loader), global_step=global_step, gpu=PHYSICAL_GPU,
@@ -567,8 +691,9 @@ def main():
                 seq_feat, pos_feat, _action_type, sid, pos_log_p, ranking_loss_mask,
             ) = batch
             optimizer.zero_grad(set_to_none=True)
+            sid_weight_state["value"] = sid_loss_weight_at(global_step)
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                loss, _ = model.forward_train(
+                loss, loss_details = model.forward_train(
                     seq.to(args.device), pos.to(args.device), token_type,
                     next_token_type, next_action_type.to(args.device), seq_feat,
                     pos_feat, sid.to(args.device), pos_log_p.to(args.device),
@@ -584,6 +709,10 @@ def main():
             scheduler.step()
             global_step += 1
             losses.append(float(loss.detach().cpu()))
+            sid_weights.append(float(sid_weight_state["value"]))
+            if ENABLE_SID:
+                sid1_losses.append(float(loss_details.get("Sid1Loss/train", float("nan"))))
+                sid2_losses.append(float(loss_details.get("Sid2Loss/train", float("nan"))))
             if step == 1 or step % LOG_EVERY == 0 or step == len(loader):
                 elapsed = time.time() - epoch_started
                 record = {
@@ -593,6 +722,9 @@ def main():
                     "learning_rate": optimizer.param_groups[0]["lr"],
                     "users_per_second": step * BATCH_SIZE / elapsed,
                     "peak_memory_mib": torch.cuda.max_memory_allocated() / 1024**2,
+                    "sid_loss_weight": sid_weights[-1] if ENABLE_SID else None,
+                    "sid1_loss": sid1_losses[-1] if ENABLE_SID else None,
+                    "sid2_loss": sid2_losses[-1] if ENABLE_SID else None,
                 }
                 print(json.dumps(record, sort_keys=True), flush=True)
                 write_status(
@@ -603,19 +735,23 @@ def main():
             "epoch": epoch, "mean_loss": float(np.mean(losses)),
             "last_loss": losses[-1], "seconds": time.time() - epoch_started,
             "learning_rate": optimizer.param_groups[0]["lr"],
+            "mean_sid_loss_weight": float(np.mean(sid_weights)) if ENABLE_SID else None,
+            "mean_sid1_loss": float(np.nanmean(sid1_losses)) if ENABLE_SID else None,
+            "mean_sid2_loss": float(np.nanmean(sid2_losses)) if ENABLE_SID else None,
         }
         history.append(epoch_record)
         save_resume(resume_path, model, optimizer, scheduler, epoch, global_step, history)
         print(json.dumps({"checkpoint": epoch_record}, sort_keys=True), flush=True)
 
-    overall, slices, predictions, evaluation_seconds = evaluate(
-        model, eval_dataset, internal_ids, retrieval_ids, candidate_features
+    overall, slices, predictions, evaluation_seconds, beam_result = evaluate(
+        model, eval_dataset, internal_ids, retrieval_ids, candidate_features, sid_by_item
     )
     result = {
         "status": "pass", "metrics": overall, "slices": slices,
         "experiment_id": EXPERIMENT_ID,
         "run_signature": RUN_SIGNATURE,
         "evaluation_seconds": evaluation_seconds,
+        "beam_search": beam_result,
         "audit": {
             "training_users": len(train_dataset), "validation_users": len(validation_users),
             "eligible_eval_users": len(eval_dataset), "candidates": len(retrieval_ids),
@@ -632,6 +768,9 @@ def main():
             ),
             "sid_auxiliary": ENABLE_SID,
             "sid_codebook_size": SID_CODEBOOK_SIZE if ENABLE_SID else None,
+            "sid_loss_weight": SID_LOSS_WEIGHT if ENABLE_SID else None,
+            "sid_loss_warmup_steps": SID_LOSS_WARMUP_STEPS if ENABLE_SID else None,
+            "sid_loss_delay_steps": SID_LOSS_DELAY_STEPS if ENABLE_SID else None,
         },
         "training": {
             "epochs": EPOCHS, "batch_size": BATCH_SIZE,

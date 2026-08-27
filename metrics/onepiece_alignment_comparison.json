@@ -1,0 +1,343 @@
+{
+  "beam_search": {
+    "hstu_sid_005_minus_hstu_sid_002": {
+      "competition_score": {
+        "mean_delta": 0.020025567570070627,
+        "normal_95_high": 0.021125505076767182,
+        "normal_95_low": 0.018925630063374072
+      },
+      "hit_rate_at_10": {
+        "mean_delta": 0.026241431304722444,
+        "normal_95_high": 0.02759230060718387,
+        "normal_95_low": 0.02489056200226102
+      },
+      "ndcg_at_10": {
+        "mean_delta": 0.01723293313856039,
+        "normal_95_high": 0.018247308563957145,
+        "normal_95_low": 0.016218557713163637
+      },
+      "relative_competition_score": 3.8591175784940432
+    },
+    "runs": {
+      "hstu_sid_002": {
+        "beam_size": 20,
+        "generated_pairs": 384,
+        "legal_candidate_coverage_at_10": 0.9947162352225644,
+        "mean_legal_candidate_count": 48.416948594163784,
+        "metrics": {
+          "competition_score": 0.005189157148688191,
+          "evaluated_users": 78921,
+          "hit_rate_at_10": 0.006082031398487095,
+          "hits": 480,
+          "ndcg_at_10": 0.004788010746604625
+        },
+        "target_generation_recall": 0.006436816563398842
+      },
+      "hstu_sid_005": {
+        "beam_size": 20,
+        "generated_pairs": 384,
+        "legal_candidate_coverage_at_10": 0.9997972656200504,
+        "mean_legal_candidate_count": 91.22205750053851,
+        "metrics": {
+          "competition_score": 0.025214724718758817,
+          "evaluated_users": 78921,
+          "hit_rate_at_10": 0.032323462703209536,
+          "hits": 2551,
+          "ndcg_at_10": 0.022020943885165015
+        },
+        "target_generation_recall": 0.038114063430519124
+      }
+    }
+  },
+  "full_candidate": {
+    "overall": {
+      "hstu_no_sid": {
+        "competition_score": 0.08334575505743427,
+        "evaluated_users": 78921,
+        "hit_rate_at_10": 0.12081701955119677,
+        "hits": 9535,
+        "ndcg_at_10": 0.06651083912545402
+      },
+      "hstu_old_sid": {
+        "competition_score": 0.07845713100299051,
+        "evaluated_users": 78921,
+        "hit_rate_at_10": 0.1145575955702538,
+        "hits": 9041,
+        "ndcg_at_10": 0.06223808170465484
+      },
+      "hstu_sid_002": {
+        "competition_score": 0.0834595537742934,
+        "evaluated_users": 78921,
+        "hit_rate_at_10": 0.12076633595620938,
+        "hits": 9531,
+        "ndcg_at_10": 0.06669853569256305
+      },
+      "hstu_sid_005": {
+        "competition_score": 0.08275329259165894,
+        "evaluated_users": 78921,
+        "hit_rate_at_10": 0.11994272753766425,
+        "hits": 9466,
+        "ndcg_at_10": 0.06604499573185946
+      }
+    },
+    "paired_comparisons": {
+      "hstu_old_sid_minus_hstu_no_sid": {
+        "competition_score": {
+          "mean_delta": -0.004888624054443762,
+          "normal_95_high": -0.003927938872586465,
+          "normal_95_low": -0.00584930923630106
+        },
+        "hit_rate_at_10": {
+          "mean_delta": -0.006259423980942968,
+          "normal_95_high": -0.00469719672289097,
+          "normal_95_low": -0.007821651238994967
+        },
+        "ndcg_at_10": {
+          "mean_delta": -0.004272757420799191,
+          "normal_95_high": -0.003481533486595512,
+          "normal_95_low": -0.0050639813550028695
+        },
+        "relative_competition_score": -0.05865474553652994
+      },
+      "hstu_sid_002_minus_hstu_no_sid": {
+        "competition_score": {
+          "mean_delta": 0.00011379871685913393,
+          "normal_95_high": 0.0010163866307108676,
+          "normal_95_low": -0.0007887891969925998
+        },
+        "hit_rate_at_10": {
+          "mean_delta": -5.068359498739245e-05,
+          "normal_95_high": 0.0014344481662115734,
+          "normal_95_low": -0.0015358153561863582
+        },
+        "ndcg_at_10": {
+          "mean_delta": 0.00018769656710902272,
+          "normal_95_high": 0.0009265396636856497,
+          "normal_95_low": -0.0005511465294676043
+        },
+        "relative_competition_score": 0.00136538107766504
+      },
+      "hstu_sid_005_minus_hstu_no_sid": {
+        "competition_score": {
+          "mean_delta": -0.0005924624657753314,
+          "normal_95_high": 0.00031187588317259797,
+          "normal_95_low": -0.0014968008147232606
+        },
+        "hit_rate_at_10": {
+          "mean_delta": -0.0008742920135325199,
+          "normal_95_high": 0.000616009581201283,
+          "normal_95_low": -0.0023645936082663226
+        },
+        "ndcg_at_10": {
+          "mean_delta": -0.0004658433935945654,
+          "normal_95_high": 0.00027116949493710235,
+          "normal_95_low": -0.0012028562821262332
+        },
+        "relative_competition_score": -0.007108489992886491
+      },
+      "hstu_sid_005_minus_hstu_sid_002": {
+        "competition_score": {
+          "mean_delta": -0.0007062611826344652,
+          "normal_95_high": 0.0001828674580349038,
+          "normal_95_low": -0.0015953898233038342
+        },
+        "hit_rate_at_10": {
+          "mean_delta": -0.0008236084185451274,
+          "normal_95_high": 0.0006429145970882446,
+          "normal_95_low": -0.0022901314341784995
+        },
+        "ndcg_at_10": {
+          "mean_delta": -0.000653539960703588,
+          "normal_95_high": 7.377014976034737e-05,
+          "normal_95_low": -0.0013808500711675236
+        },
+        "relative_competition_score": -0.008462316783342305
+      }
+    }
+  },
+  "limitations": [
+    "Single training seed; paired intervals describe the fixed evaluation population, not seed variance.",
+    "The 0.02 run's raw SID1/SID2 component telemetry is unavailable because of a logging-key defect; model, predictions, reported totals, hashes, and row alignment remain verified.",
+    "Upstream OnePiece README scores use a different feature/filtering/evaluation chain and are context only, not a strict reproduction percentage."
+  ],
+  "manifests": {
+    "hstu_no_sid": {
+      "config.json": "dd271269d752e342cbee6df7bdfcc255a1c5e3ce45056a59010aa09def9abd25",
+      "history.json": "3c37f2c3084a9bb2b4d91703892eafe4b9807dccb117cb7f7c59af0a92f7e420",
+      "model.pt": "2d9fa1da06c06b1789141c504c3ff987f7e25b0b73b065afb2e157093e60517f",
+      "offline_metrics.json": "3a6a70b79ab1e02e7ab6f5e99361423ab09d94037d59461af42739be98b555e7",
+      "offline_predictions.npz": "80407b78e72665f4cf21e69883d572f48c14e904418b8b3a5ac95f4f93d3932f"
+    },
+    "hstu_old_sid": {
+      "config.json": "21c93812c6ef87b6a1a3b8f537235e1f1fdb234bc4c7fba964bfa95ad42ebb05",
+      "history.json": "0762551a2b899bff8cc89cc1366cd0b3c8cdffadb15e8deb5d7afc770507270d",
+      "model.pt": "f2d84688091130978aa50b8c90a47767ee34b1b30fcfe0e84cd949c5a1cb0183",
+      "offline_metrics.json": "25e7e67e818b437f84a64d4823b4aec3eaebd1ec53bde6053dab33b33f353826",
+      "offline_predictions.npz": "9a7519266a25656980b3342c192b050f1b1477c23763edd23dd583fad81cc76b"
+    },
+    "hstu_sid_002": {
+      "config.json": "21c93812c6ef87b6a1a3b8f537235e1f1fdb234bc4c7fba964bfa95ad42ebb05",
+      "history.json": "1cf52f9b00b6833b1298b325e08f5af379627496da92e08d964f509661d1178f",
+      "model.pt": "0d5e7083c63bed8325057a541b04c352e5e40e083ce5e809c48ae1db67490990",
+      "offline_metrics.json": "ad99fc50eeb17940e03095acde7a459bccdc2c52c8aaead2d2bddd098a5ef4e0",
+      "offline_predictions.npz": "555c16baf905f2d3eaaf86ce965ec585072c2defe2443575016ae903ffb5ffe7"
+    },
+    "hstu_sid_005": {
+      "config.json": "21c93812c6ef87b6a1a3b8f537235e1f1fdb234bc4c7fba964bfa95ad42ebb05",
+      "history.json": "58c33f963b6de67f599ffb02beddceb7248e8c3c63fbae1532a519bb39ca64d4",
+      "model.pt": "fea7d52f8905a23de226e88eff499daf4c004c72b71a8451b0a5b0505bc701ad",
+      "offline_metrics.json": "9dba15dc6271e97f85180447ef6d33120464eb99a10e6f56a900794f150869f2",
+      "offline_predictions.npz": "b113656c6433a4ecb446b581c8ea0b1393e22e4efb9fd05cea318080879f9d1e"
+    }
+  },
+  "mapping": {
+    "algorithm": "capacity-balanced coarse SID plus top-k centroid occupancy reallocation",
+    "coarse_sid_moved": 766,
+    "collision_items": 0,
+    "fallback_reassigned": 163184,
+    "items": 4783154,
+    "original_pair_retained": 2533426,
+    "sha256": "cfe6dea013a826f336c91cf4415b3bc251399385a381f021ffd7fec4aa09f82d",
+    "status": "pass",
+    "top_k_reassigned": 2086544,
+    "unique_sid_pairs": 4783154
+  },
+  "metadata": {
+    "hstu_no_sid": {
+      "experiment_id": "s8512",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1402098128
+      },
+      "peak_memory_mib": 26787.39990234375,
+      "training": {
+        "derived_epoch_seconds": 10687.581119298935,
+        "epochs": 6,
+        "final_epoch": {
+          "epoch": 6,
+          "last_loss": 4.083395481109619,
+          "learning_rate": 0.0,
+          "mean_loss": 4.121695288206825,
+          "seconds": 1717.6272161006927
+        },
+        "global_steps": 169056,
+        "sid_component_telemetry_available": true
+      }
+    },
+    "hstu_old_sid": {
+      "experiment_id": "z512",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE + SID1/SID2 cross-entropy",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1423127274,
+        "sid_auxiliary": true,
+        "sid_codebook_size": 4096
+      },
+      "peak_memory_mib": 27192.3916015625,
+      "training": {
+        "derived_epoch_seconds": 13362.002922058105,
+        "epochs": 6,
+        "final_epoch": {
+          "epoch": 6,
+          "last_loss": 44.115509033203125,
+          "learning_rate": 0.0,
+          "mean_loss": 43.85891191584356,
+          "seconds": 2223.8676199913025
+        },
+        "global_steps": 169056,
+        "sid_component_telemetry_available": true
+      }
+    },
+    "hstu_sid_002": {
+      "experiment_id": "a02",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE + SID1/SID2 cross-entropy",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1423127274,
+        "sid_auxiliary": true,
+        "sid_codebook_size": 4096,
+        "sid_loss_delay_steps": 0,
+        "sid_loss_warmup_steps": 28176,
+        "sid_loss_weight": 0.02
+      },
+      "peak_memory_mib": 19429.6123046875,
+      "training": {
+        "derived_epoch_seconds": 13599.340135335922,
+        "epochs": 6,
+        "final_epoch": {
+          "epoch": 6,
+          "last_loss": 4.991320610046387,
+          "learning_rate": 0.0,
+          "mean_loss": 5.036848376093095,
+          "mean_sid1_loss": null,
+          "mean_sid2_loss": null,
+          "mean_sid_loss_weight": 0.02,
+          "seconds": 2248.8558065891266
+        },
+        "global_steps": 169056,
+        "sid_component_telemetry_available": false
+      }
+    },
+    "hstu_sid_005": {
+      "experiment_id": "a05",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE + SID1/SID2 cross-entropy",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1423127274,
+        "sid_auxiliary": true,
+        "sid_codebook_size": 4096,
+        "sid_loss_delay_steps": 0,
+        "sid_loss_warmup_steps": 28176,
+        "sid_loss_weight": 0.05
+      },
+      "peak_memory_mib": 27192.3916015625,
+      "training": {
+        "derived_epoch_seconds": 14224.310438632965,
+        "epochs": 6,
+        "final_epoch": {
+          "epoch": 6,
+          "last_loss": 6.29504919052124,
+          "learning_rate": 0.0,
+          "mean_loss": 6.319750563621792,
+          "mean_sid1_loss": 0.2218392781325188,
+          "mean_sid2_loss": 1.970497973601734,
+          "mean_sid_loss_weight": 0.05000000000000001,
+          "seconds": 2252.057605266571
+        },
+        "global_steps": 169056,
+        "sid_component_telemetry_available": true
+      }
+    }
+  },
+  "protocol": {
+    "candidates": 660000,
+    "evaluation": "frozen full-candidate Top-10",
+    "row_alignment": {
+      "keys": [
+        "user_reids",
+        "target_retrieval_ids",
+        "prefix_lengths"
+      ],
+      "rows": 78921
+    },
+    "seeds": 1
+  },
+  "status": "pass"
+}

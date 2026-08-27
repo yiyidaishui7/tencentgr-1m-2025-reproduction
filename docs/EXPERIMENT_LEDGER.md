@@ -61,7 +61,9 @@ selected 8×512 scale.
 | HSTU 4×128 | complete/verified | 0.0977433 | 0.0522325 | 0.0663408 | Frozen reference |
 | HSTU 8×256 | complete/verified | 0.1112251 | 0.0602908 | 0.0760805 | +14.68% vs 4×128 |
 | HSTU 8×512 | complete/verified | **0.1208170** | **0.0665108** | **0.0833458** | +25.63% vs 4×128; selected for SID |
-| HSTU 8×512 + SID | complete/verified | 0.1145576 | 0.0622381 | 0.0784571 | -5.87% vs matched no-SID run |
+| HSTU 8×512 + old SID (collisions, weight 1.0) | complete/verified | 0.1145576 | 0.0622381 | 0.0784571 | -5.87% vs matched no-SID run |
+| HSTU 8×512 + collision-free SID, weight 0.02 | complete/verified | 0.1207663 | **0.0666985** | **0.0834596** | +0.14% vs no SID; interval crosses zero |
+| HSTU 8×512 + collision-free SID, weight 0.05 | complete/verified | 0.1199427 | 0.0660450 | 0.0827533 | -0.71% vs no SID; interval crosses zero |
 
 Evidence milestones:
 
@@ -71,5 +73,11 @@ Evidence milestones:
   and is bound to the selected checkpoint by source and mapping hashes.
 - SID loss rises sharply after epoch 2, so the negative effect is recorded as
   an auxiliary-loss/codebook diagnosis, not a general claim against semantic IDs.
+- The alignment follow-up removes all pair collisions and linearly warms the SID
+  objective for 28,176 steps. Weight 0.02 recovers 6.38% versus the old SID run
+  and is statistically tied with no SID on the fixed population.
+- Beam 20×384 reveals a trade-off: weight 0.05 reaches 0.0252147 versus 0.0051892
+  at weight 0.02, but its full-candidate score is 0.85% lower.
 - The private Hugging Face archive passed read-back verification at commit
-  `2a77747137d9a9f1222d358342f1e5054982ca6a`: 103 files and 18,453,267,626 bytes.
+  `686e5760a89014c9dcb32f58f7f32f559779de4e`: 151 files and 29,874,511,230 bytes;
+  19 LFS objects matched remote OIDs and 132 small files matched downloaded SHA-256.

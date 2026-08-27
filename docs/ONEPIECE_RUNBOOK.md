@@ -114,9 +114,20 @@ The array SHA-256 is included in the run signature and final protocol record.
 ONEPIECE_ENABLE_SID=1 \
 ONEPIECE_SID_PATH=/evidence/sid_by_internal_id.npy \
 ONEPIECE_SID_CODEBOOK_SIZE=4096 \
-ONEPIECE_EXPERIMENT_ID=hstu_scaled_sid \
+ONEPIECE_SID_LOSS_WEIGHT=0.02 \
+ONEPIECE_SID_LOSS_WARMUP_STEPS=28176 \
+ONEPIECE_SID_LOSS_DELAY_STEPS=0 \
+ONEPIECE_ENABLE_BEAM_EVAL=1 \
+ONEPIECE_BEAM_SIZE=20 \
+ONEPIECE_BEAM_TOP_K=384 \
+ONEPIECE_EXPERIMENT_ID=hstu_8x512_sid_002 \
 python -u scripts/run_onepiece_formal.py
 ```
+
+The two alignment configs under `configs/onepiece_hstu_8x512_sid_*.json`
+freeze the 0.02/0.05 single-variable comparison. Beam evaluation first decodes
+SID pairs, rejects pairs absent from the collision-free item mapping, and then
+reranks legal items with the same two-tower score used by full-candidate Top-10.
 
 The no-SID reference and SID run must otherwise use the same architecture,
 seed, split, batch, optimizer, schedule, epochs and exact evaluation contract.
