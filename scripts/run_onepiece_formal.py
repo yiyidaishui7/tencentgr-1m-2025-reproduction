@@ -17,6 +17,7 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 
 import onepiece_common as common
+import onepiece_evaluation_contract as evaluation_contract
 import onepiece_source_contract as source_contract
 import onepiece_training_contract as training_contract
 
@@ -102,6 +103,9 @@ RUNNER_SHA256 = common.sha256(Path(__file__).resolve())
 COMMON_SHA256 = common.sha256(Path(common.__file__).resolve())
 TRAINING_CONTRACT_SHA256 = common.sha256(Path(training_contract.__file__).resolve())
 SOURCE_CONTRACT_SHA256 = common.sha256(Path(source_contract.__file__).resolve())
+EVALUATION_CONTRACT_SHA256 = common.sha256(
+    Path(evaluation_contract.__file__).resolve()
+)
 CONTRACT_SHA256 = common.sha256(CONTRACT)
 INDEXER_SHA256 = common.sha256(INDEXER)
 
@@ -138,8 +142,12 @@ RUN_CONFIG = {
     "common_sha256": COMMON_SHA256,
     "training_contract_sha256": TRAINING_CONTRACT_SHA256,
     "source_contract_sha256": SOURCE_CONTRACT_SHA256,
+    "evaluation_contract_sha256": EVALUATION_CONTRACT_SHA256,
     "contract_sha256": CONTRACT_SHA256,
     "indexer_sha256": INDEXER_SHA256,
+    "cold_candidate_filtering": True,
+    "history_filtering": True,
+    "beam_ann_fallback": ENABLE_BEAM_EVAL,
 }
 RUN_SIGNATURE = hashlib.sha256(
     json.dumps(RUN_CONFIG, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -405,7 +413,10 @@ def load_candidate_arrays(candidate_dataset, item_index, contract_raw, feature_s
         if int(decoded.max(initial=0)) > int(feature_statistics[name]):
             raise RuntimeError(f"candidate feature {name} exceeds training vocabulary")
         features[name] = decoded
-    return internal_ids, np.arange(len(raw_ids), dtype=np.uint64), features
+    retrieval_ids = np.arange(len(raw_ids), dtype=np.uint64)
+    return evaluation_contract.filter_cold_candidates(
+        internal_ids, retrieval_ids, features
+    )
 
 
 def candidate_embeddings(model, internal_ids, candidate_features):
@@ -458,15 +469,21 @@ def metrics(topk, targets, prefixes):
     return result, slices
 
 
-def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_features, sid_by_item=None):
+def evaluate(
+    model, eval_dataset, internal_ids, retrieval_ids, candidate_features,
+    item_vocabulary_size, sid_by_item=None,
+):
     started = time.time()
     write_status("evaluation", stage="candidates", progress=0)
     candidates = candidate_embeddings(model, internal_ids, candidate_features)
+    candidate_row_by_internal = evaluation_contract.build_candidate_row_index(
+        internal_ids, item_vocabulary_size
+    )
     pair_to_candidate = None
     if ENABLE_BEAM_EVAL:
         if sid_by_item is None:
             raise RuntimeError("beam evaluation is missing the frozen SID mapping")
-        candidate_rows = np.flatnonzero(internal_ids > 0)
+        candidate_rows = np.arange(len(internal_ids), dtype=np.int32)
         candidate_sid = np.asarray(sid_by_item[internal_ids[candidate_rows]], dtype=np.int64)
         pair_width = SID_CODEBOOK_SIZE + 1
         pair_keys = candidate_sid[:, 0] * pair_width + candidate_sid[:, 1]
@@ -485,13 +502,34 @@ def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_feature
     beam_topk_rows = []
     beam_valid_counts = []
     beam_target_generated = []
+    history_masked_candidate_pairs = 0
+    ann_history_overlap_count = 0
+    beam_history_overlap_count = 0
     model.eval()
     model.set_mode("infer")
     with torch.no_grad(), torch.autocast(device_type="cuda", dtype=torch.bfloat16):
         for batch_index, (seq, token_type, seq_feat, targets, prefixes, users) in enumerate(loader, 1):
             query, _, _ = model.predict(seq.to(model.dev), seq_feat, token_type.to(model.dev))
             scores = query.float() @ candidates.T
-            indices = torch.topk(scores, k=10, dim=1).indices.cpu().numpy()
+            sequence_np = seq.numpy()
+            history_batch_rows, history_candidate_rows = (
+                evaluation_contract.history_mask_indices(
+                    sequence_np, candidate_row_by_internal
+                )
+            )
+            history_masked_candidate_pairs += len(history_batch_rows)
+            if len(history_batch_rows):
+                scores[
+                    torch.from_numpy(history_batch_rows).to(scores.device),
+                    torch.from_numpy(history_candidate_rows).to(scores.device),
+                ] = -torch.inf
+            ann_selection = torch.topk(scores, k=10, dim=1)
+            if not bool(torch.isfinite(ann_selection.values).all()):
+                raise RuntimeError("history-filtered ANN produced fewer than 10 items")
+            indices = ann_selection.indices.cpu().numpy().astype(np.int32, copy=False)
+            ann_history_overlap_count += evaluation_contract.count_history_overlaps(
+                indices, internal_ids, sequence_np
+            )
             topk_rows.append(retrieval_ids[indices])
             if ENABLE_BEAM_EVAL:
                 (
@@ -518,23 +556,37 @@ def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_feature
                 restricted_scores.masked_fill_(
                     ~torch.from_numpy(valid).to(scores.device), -torch.inf
                 )
-                restricted_positions = torch.topk(
+                restricted_selection = torch.topk(
                     restricted_scores, k=10, dim=1
-                ).indices.cpu().numpy()
+                )
+                restricted_positions = restricted_selection.indices.cpu().numpy()
                 selected_candidates = np.take_along_axis(
                     generated_candidates, restricted_positions, axis=1
                 )
-                selected_valid = selected_candidates >= 0
-                beam_topk = np.full(
-                    selected_candidates.shape, np.iinfo(np.uint64).max, dtype=np.uint64
+                selected_legal = torch.isfinite(
+                    restricted_selection.values
+                ).cpu().numpy()
+                selected_candidates[~selected_legal] = -1
+                merged_candidates = evaluation_contract.merge_ranked_candidate_rows(
+                    selected_candidates, indices, output_size=10
                 )
-                beam_topk[selected_valid] = retrieval_ids[selected_candidates[selected_valid]]
+                beam_history_overlap_count += evaluation_contract.count_history_overlaps(
+                    merged_candidates, internal_ids, sequence_np
+                )
+                beam_topk = retrieval_ids[merged_candidates]
                 beam_topk_rows.append(beam_topk)
-                valid_counts = valid.sum(axis=1).astype(np.int32)
+                legal = torch.isfinite(restricted_scores).cpu().numpy()
+                valid_counts = legal.sum(axis=1).astype(np.int32)
                 beam_valid_counts.append(valid_counts)
+                generated_retrieval_ids = np.full(
+                    generated_candidates.shape, -1, dtype=np.int64
+                )
+                generated_retrieval_ids[legal] = retrieval_ids[
+                    generated_candidates[legal]
+                ].astype(np.int64, copy=False)
                 target_rows_for_batch = np.asarray(targets, dtype=np.int64)
                 beam_target_generated.append(
-                    (generated_candidates == target_rows_for_batch[:, None]).any(axis=1)
+                    (generated_retrieval_ids == target_rows_for_batch[:, None]).any(axis=1)
                 )
             target_rows.append(targets)
             prefix_rows.append(prefixes)
@@ -548,6 +600,8 @@ def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_feature
     targets = np.concatenate(target_rows)
     prefixes = np.concatenate(prefix_rows)
     users = np.concatenate(user_rows)
+    if ann_history_overlap_count != 0 or beam_history_overlap_count != 0:
+        raise RuntimeError("history filtering invariant failed")
     overall, slices = metrics(topk, targets, prefixes)
     predictions = {
         "topk_retrieval_ids": topk,
@@ -572,9 +626,20 @@ def evaluate(model, eval_dataset, internal_ids, retrieval_ids, candidate_feature
             "mean_legal_candidate_count": float(valid_counts.mean()),
             "users_with_at_least_10_legal_candidates": int((valid_counts >= 10).sum()),
             "legal_candidate_coverage_at_10": float((valid_counts >= 10).mean()),
+            "users_requiring_ann_fallback": int((valid_counts < 10).sum()),
+            "history_overlap_count": beam_history_overlap_count,
             "target_generation_recall": float(target_generated.mean()),
         }
-    return overall, slices, predictions, time.time() - started, beam_result
+    evaluation_audit = {
+        "warm_candidates": len(retrieval_ids),
+        "history_masked_candidate_pairs": history_masked_candidate_pairs,
+        "ann_history_overlap_count": ann_history_overlap_count,
+        "beam_history_overlap_count": beam_history_overlap_count if ENABLE_BEAM_EVAL else None,
+    }
+    return (
+        overall, slices, predictions, time.time() - started,
+        beam_result, evaluation_audit,
+    )
 
 
 def scheduler_factor(step, total_steps):
@@ -689,8 +754,15 @@ def main():
             write_status("preparing", stage="sequences", processed=row_index, total=len(sequences))
     train_dataset.finalize()
     eval_dataset.finalize()
-    internal_ids, retrieval_ids, candidate_features = load_candidate_arrays(
-        candidate_dataset, indexer["i"], contract["candidate_raw_creative_ids"], feature_statistics,
+    (
+        internal_ids, retrieval_ids, candidate_features,
+        cold_start_candidate_count,
+    ) = load_candidate_arrays(
+        candidate_dataset, indexer["i"],
+        contract["candidate_raw_creative_ids"], feature_statistics,
+    )
+    evaluation_contract.validate_targets_in_candidate_pool(
+        contract["eval_target_retrieval_ids"], retrieval_ids
     )
 
     sys.path.insert(0, str(common.SOURCE_DIR))
@@ -824,8 +896,12 @@ def main():
         save_resume(resume_path, model, optimizer, scheduler, epoch, global_step, history)
         print(json.dumps({"checkpoint": epoch_record}, sort_keys=True), flush=True)
 
-    overall, slices, predictions, evaluation_seconds, beam_result = evaluate(
-        model, eval_dataset, internal_ids, retrieval_ids, candidate_features, sid_by_item
+    (
+        overall, slices, predictions, evaluation_seconds,
+        beam_result, evaluation_audit,
+    ) = evaluate(
+        model, eval_dataset, internal_ids, retrieval_ids, candidate_features,
+        item_count, sid_by_item,
     )
     result = {
         "status": "pass", "metrics": overall, "slices": slices,
@@ -836,7 +912,9 @@ def main():
         "audit": {
             "training_users": len(train_dataset), "validation_users": len(validation_users),
             "eligible_eval_users": len(eval_dataset), "candidates": len(retrieval_ids),
-            "cold_start_candidates": int((internal_ids == 0).sum()),
+            "cold_start_candidates": cold_start_candidate_count,
+            "excluded_cold_start_candidates": cold_start_candidate_count,
+            **evaluation_audit,
             "valid_training_transitions": train_dataset.valid_transition_count,
             "active_ranking_transitions": train_dataset.active_ranking_transition_count,
             "masked_ranking_transitions": train_dataset.masked_ranking_transition_count,
@@ -870,7 +948,9 @@ def main():
             "split_seed": SPLIT_SEED, "training_seed": SEED,
             "contract_sha256": common.sha256(CONTRACT),
             "indexer_sha256": common.INDEXER_SHA256,
-            "history_filtering": False,
+            "cold_candidate_filtering": True,
+            "history_filtering": True,
+            "beam_ann_fallback": ENABLE_BEAM_EVAL,
             "post_cutoff_exposure_mask": ENABLE_POST_CUTOFF_EXPOSURE_MASK,
             "post_cutoff_exposure_timestamp": POST_CUTOFF_EXPOSURE_TIMESTAMP,
             "upstream_commit": source_contract.EXPECTED_UPSTREAM_COMMIT,
