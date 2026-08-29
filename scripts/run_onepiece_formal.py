@@ -17,6 +17,7 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 
 import onepiece_common as common
+import onepiece_source_contract as source_contract
 import onepiece_training_contract as training_contract
 
 
@@ -24,6 +25,7 @@ ROOT = common.ROOT
 HOME = common.HOME
 CONTRACT = common.CONTRACT
 INDEXER = common.INDEXER
+SOURCE_PROVENANCE = source_contract.verify_source_files(common.SOURCE_DIR)
 ARCHITECTURE = os.environ.get(
     "ONEPIECE_ARCHITECTURE", os.environ.get("ONEPIECE_VARIANT", "hstu")
 ).strip().lower()
@@ -122,6 +124,9 @@ RUN_CONFIG = {
     "beam_top_k": BEAM_TOP_K if ENABLE_BEAM_EVAL else None,
     "post_cutoff_exposure_mask": ENABLE_POST_CUTOFF_EXPOSURE_MASK,
     "post_cutoff_exposure_timestamp": POST_CUTOFF_EXPOSURE_TIMESTAMP,
+    "upstream_commit": source_contract.EXPECTED_UPSTREAM_COMMIT,
+    "upstream_source_sha256": SOURCE_PROVENANCE,
+    "runtime_patch_sha256": source_contract.EXPECTED_RUNTIME_PATCH_SHA256,
 }
 RUN_SIGNATURE = hashlib.sha256(
     json.dumps(RUN_CONFIG, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -853,6 +858,9 @@ def main():
             "history_filtering": False,
             "post_cutoff_exposure_mask": ENABLE_POST_CUTOFF_EXPOSURE_MASK,
             "post_cutoff_exposure_timestamp": POST_CUTOFF_EXPOSURE_TIMESTAMP,
+            "upstream_commit": source_contract.EXPECTED_UPSTREAM_COMMIT,
+            "upstream_source_sha256": SOURCE_PROVENANCE,
+            "runtime_patch_sha256": source_contract.EXPECTED_RUNTIME_PATCH_SHA256,
             "sid_mapping_sha256": SID_SHA256,
         },
     }
