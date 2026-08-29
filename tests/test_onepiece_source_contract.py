@@ -61,3 +61,31 @@ def test_public_runner_signs_verified_upstream_source_into_run_signature():
     assert '"upstream_commit"' in source
     assert '"upstream_source_sha256"' in source
     assert '"runtime_patch_sha256"' in source
+
+
+def test_public_runner_signature_binds_implementation_and_frozen_inputs():
+    source = (ROOT / "scripts" / "run_onepiece_formal.py").read_text(
+        encoding="utf-8"
+    )
+    run_config = source.split("RUN_CONFIG = {", 1)[1].split(
+        "RUN_SIGNATURE =", 1
+    )[0]
+
+    for name in (
+        "runner_sha256",
+        "common_sha256",
+        "training_contract_sha256",
+        "source_contract_sha256",
+        "contract_sha256",
+        "indexer_sha256",
+    ):
+        assert f'"{name}"' in run_config
+
+
+def test_resume_rejects_a_different_indexer_even_with_matching_config():
+    source = (ROOT / "scripts" / "run_onepiece_formal.py").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'checkpoint.get("indexer_sha256") != INDEXER_SHA256' in source
+    assert "resume indexer mismatch" in source
