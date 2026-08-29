@@ -17,6 +17,12 @@ The patch removes import-time dependency installation and supplies the missing
 `interest_k` argument in two metric calls. Install dependencies into an
 isolated environment before importing the upstream modules.
 
+Before a run, `onepiece_source_contract.py` canonicalizes line endings and
+verifies `model.py`, `dataset.py`, `utils.py`, and `deepseek_moe.py` against
+the frozen commit. The runner also signs those hashes, the runtime patch, its
+own implementation modules, the offline contract, and the indexer into
+`run_signature`. A checkpoint created by any different signature is rejected.
+
 ## 2. Prepare the immutable inputs
 
 - Download `TAAC2025/TencentGR-1M` and its `indexer.pkl` with
@@ -131,6 +137,52 @@ reranks legal items with the same two-tower score used by full-candidate Top-10.
 
 The no-SID reference and SID run must otherwise use the same architecture,
 seed, split, batch, optimizer, schedule, epochs and exact evaluation contract.
+
+The archived collision-free SID experiment is a model-derived, global
+residual two-level approximation. It is not a strict implementation of the
+README's within-L1 L2 clustering rule: capacity repair moved 766 items across
+L1 clusters, so it does not preserve the documented `sid1 fixed` invariant.
+Keep that limitation in any downstream claim.
+
+### Post-cutoff exposure-mask ablation
+
+The frozen README excludes ranking transitions strictly after
+`2025-05-31 00:00 Asia/Shanghai`, represented here by Unix timestamp
+`1748620800`. In the frozen `reward=False` code path, `ranking_loss_mask`
+does not reach InfoNCE, so the aligned runner applies the same intent to the
+`next_token_type` mask that InfoNCE actually consumes.
+
+```bash
+ONEPIECE_ENABLE_POST_CUTOFF_EXPOSURE_MASK=1 \
+ONEPIECE_POST_CUTOFF_EXPOSURE_TIMESTAMP=1748620800 \
+ONEPIECE_EXPERIMENT_ID=hstu_8x512_post_cutoff_mask \
+ONEPIECE_HIDDEN_UNITS=512 \
+ONEPIECE_NUM_BLOCKS=8 \
+ONEPIECE_NUM_HEADS=8 \
+python -u scripts/run_onepiece_formal.py
+```
+
+Treat this as a single-variable training comparison only when its control is
+evaluated by the same candidate post-processing version.
+
+### Aligned candidate evaluation
+
+The runner first validates all 660,000 official candidate rows against the
+frozen contract, then excludes the 148,971 candidates absent from the training
+item index. The active pool therefore contains 511,029 warm candidates while
+preserving their original retrieval IDs. Every one of the 78,921 targets must
+remain in that pool or evaluation fails closed.
+
+For each user, all non-padding items in the truncated query history are masked
+before Top-10. SID Beam candidates use the same history-filtered two-tower
+score; when fewer than ten legal SID candidates remain, ANN fallback fills the
+row in score order without duplicates or sentinel IDs. Outputs must contain
+exactly ten warm, unseen retrieval IDs per user.
+
+Scores already published in the result documents used the historical
+660,000-candidate, no-history-filter protocol. They remain reproducible
+historical evidence but are not relabeled as results from this aligned
+post-processing contract.
 
 ## 4. Acceptance gates
 

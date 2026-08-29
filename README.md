@@ -38,6 +38,13 @@ frozen model-derived two-level semantic-ID auxiliary objective at the selected
 | **HSTU 8×512 + collision-free SID (0.02)** | 1,423,127,274 | 0.1207663 | **0.0666985** | **0.0834596** | 226.7 min |
 | HSTU 8×512 + collision-free SID (0.05) | 1,423,127,274 | 0.1199427 | 0.0660450 | 0.0827533 | 240.2 min |
 
+These are verified historical-protocol scores: the 660k pool includes 148,971
+cold candidates and user history was not filtered. The current runner filters
+to 511,029 warm candidates, masks seen items, and gives Beam an ANN fallback;
+aligned re-evaluation is reported separately rather than retroactively changing
+the table. The archived SID mapping is a zero-collision global-residual
+approximation, not a strict within-L1 implementation of the OnePiece README.
+
 Scaling from 4×128 to 8×512 raises the fixed-seed score by 25.63%. The first
 colliding, unweighted SID ablation regressed 5.87%; collision-free IDs plus a
 0.02 linearly warmed auxiliary weight recover that regression and finish 0.14%
