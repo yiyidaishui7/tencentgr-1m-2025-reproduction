@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 
@@ -55,3 +56,21 @@ def test_public_runner_signs_the_mask_setting_into_its_run_contract():
     assert '"post_cutoff_exposure_mask"' in source
     assert "ranking_loss_weight" in source
     assert "effective_next_token_type" in source
+
+
+def test_exposure_mask_config_is_a_single_variable_8x512_ablation():
+    control = json.loads(
+        (ROOT / "configs" / "onepiece_hstu_8x512.json").read_text(encoding="utf-8")
+    )
+    aligned = json.loads(
+        (
+            ROOT
+            / "configs"
+            / "onepiece_hstu_8x512_post_cutoff_mask.json"
+        ).read_text(encoding="utf-8")
+    )
+
+    assert aligned.pop("post_cutoff_exposure_mask") is True
+    assert aligned.pop("post_cutoff_exposure_timestamp") == 1_748_620_800
+    assert aligned.pop("post_cutoff_exposure_timezone") == "Asia/Shanghai"
+    assert aligned == control
