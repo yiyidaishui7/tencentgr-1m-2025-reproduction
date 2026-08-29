@@ -166,6 +166,29 @@ def build_dataset_receipt(name: str, dataset) -> dict:
     }
 
 
+def verify_frozen_inputs(
+    datasets_by_name: dict | None = None,
+    expected_dataset_receipt: dict | None = None,
+) -> dict | None:
+    source_receipt = runner.source_contract.verify_source_files(common.SOURCE_DIR)
+    if (
+        common.sha256(SOURCE_MODEL) != SOURCE_MODEL_SHA256
+        or common.sha256(common.CONTRACT) != runner.CONTRACT_SHA256
+        or common.sha256(common.INDEXER) != runner.INDEXER_SHA256
+        or source_receipt != runner.SOURCE_PROVENANCE
+    ):
+        raise RuntimeError("frozen input changed during reevaluation")
+    if datasets_by_name is None or expected_dataset_receipt is None:
+        return None
+    observed_dataset_receipt = {
+        name: build_dataset_receipt(name, datasets_by_name[name])
+        for name in DATASET_CONTRACT
+    }
+    if observed_dataset_receipt != expected_dataset_receipt:
+        raise RuntimeError("frozen input changed during reevaluation")
+    return observed_dataset_receipt
+
+
 def write_status(state: str, **values) -> None:
     payload = {"state": state, "time": time.time(), **values}
     temporary = STATUS.with_suffix(".tmp")
@@ -192,6 +215,9 @@ def main() -> None:
     common.set_seed(runner.SEED)
     torch.set_float32_matmul_precision("high")
     runner.write_status = write_status
+
+    write_status("preparing", stage="frozen_inputs")
+    verify_frozen_inputs()
 
     with common.INDEXER.open("rb") as handle:
         indexer = pickle.load(handle)
@@ -224,11 +250,15 @@ def main() -> None:
         or len(candidate_dataset) != 660000
     ):
         raise RuntimeError("dataset/indexer count mismatch")
+    datasets_by_name = {
+        "seq": sequences,
+        "item_feat": item_dataset,
+        "user_feat": user_dataset,
+        "candidate": candidate_dataset,
+    }
     dataset_receipt = {
-        "seq": build_dataset_receipt("seq", sequences),
-        "item_feat": build_dataset_receipt("item_feat", item_dataset),
-        "user_feat": build_dataset_receipt("user_feat", user_dataset),
-        "candidate": build_dataset_receipt("candidate", candidate_dataset),
+        name: build_dataset_receipt(name, dataset)
+        for name, dataset in datasets_by_name.items()
     }
 
     write_status("preparing", stage="features")
@@ -310,6 +340,7 @@ def main() -> None:
     model = BaselineModel(
         user_count, item_count, feature_statistics, feature_types, args
     )
+    verify_frozen_inputs(datasets_by_name, dataset_receipt)
     checkpoint = torch.load(SOURCE_MODEL, map_location="cpu", weights_only=False)
     source_result = checkpoint.get("result")
     if not isinstance(source_result, dict):
@@ -342,6 +373,9 @@ def main() -> None:
         model, eval_dataset, internal_ids, retrieval_ids, candidate_features,
         item_count, sid_by_item,
     )
+    dataset_receipt_after = verify_frozen_inputs(
+        datasets_by_name, dataset_receipt
+    )
     result = {
         "status": "pass",
         "experiment_id": runner.EXPERIMENT_ID,
@@ -349,6 +383,7 @@ def main() -> None:
         "source_model_sha256": SOURCE_MODEL_SHA256,
         "source_run_signature": source_result.get("run_signature"),
         "dataset_receipt": dataset_receipt,
+        "dataset_receipt_reverified": dataset_receipt_after == dataset_receipt,
         "metrics": overall,
         "slices": slices,
         "beam_search": beam_result,
