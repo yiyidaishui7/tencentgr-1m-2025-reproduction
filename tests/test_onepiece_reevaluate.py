@@ -89,3 +89,13 @@ def test_reevaluator_atomically_publishes_a_complete_output_directory():
     assert source.index("os.replace(WORK_OUTPUT, OUTPUT)") < source.index(
         'write_status("complete", **result)'
     )
+
+
+def test_reevaluator_rechecks_every_frozen_input_before_and_after_use():
+    source = SCRIPT.read_text(encoding="utf-8")
+
+    assert "def verify_frozen_inputs" in source
+    assert source.count("verify_frozen_inputs(") >= 4
+    assert "source_contract.verify_source_files" in source
+    assert "dataset_receipt_after" in source
+    assert "frozen input changed during reevaluation" in source
