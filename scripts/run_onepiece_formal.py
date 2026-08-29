@@ -98,6 +98,13 @@ if BEAM_SIZE <= 0 or BEAM_TOP_K < 10:
 if POST_CUTOFF_EXPOSURE_TIMESTAMP <= 0:
     raise RuntimeError("ONEPIECE_POST_CUTOFF_EXPOSURE_TIMESTAMP must be positive")
 
+RUNNER_SHA256 = common.sha256(Path(__file__).resolve())
+COMMON_SHA256 = common.sha256(Path(common.__file__).resolve())
+TRAINING_CONTRACT_SHA256 = common.sha256(Path(training_contract.__file__).resolve())
+SOURCE_CONTRACT_SHA256 = common.sha256(Path(source_contract.__file__).resolve())
+CONTRACT_SHA256 = common.sha256(CONTRACT)
+INDEXER_SHA256 = common.sha256(INDEXER)
+
 RUN_CONFIG = {
     "architecture": ARCHITECTURE,
     "experiment_id": EXPERIMENT_ID,
@@ -127,6 +134,12 @@ RUN_CONFIG = {
     "upstream_commit": source_contract.EXPECTED_UPSTREAM_COMMIT,
     "upstream_source_sha256": SOURCE_PROVENANCE,
     "runtime_patch_sha256": source_contract.EXPECTED_RUNTIME_PATCH_SHA256,
+    "runner_sha256": RUNNER_SHA256,
+    "common_sha256": COMMON_SHA256,
+    "training_contract_sha256": TRAINING_CONTRACT_SHA256,
+    "source_contract_sha256": SOURCE_CONTRACT_SHA256,
+    "contract_sha256": CONTRACT_SHA256,
+    "indexer_sha256": INDEXER_SHA256,
 }
 RUN_SIGNATURE = hashlib.sha256(
     json.dumps(RUN_CONFIG, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -589,8 +602,8 @@ def save_resume(path, model, optimizer, scheduler, epoch, global_step, history):
             "state_dict": model.state_dict(), "optimizer": optimizer.state_dict(),
             "scheduler": scheduler.state_dict(), "epoch": epoch,
             "global_step": global_step, "history": history,
-            "contract_sha256": common.sha256(CONTRACT),
-            "indexer_sha256": common.INDEXER_SHA256,
+            "contract_sha256": CONTRACT_SHA256,
+            "indexer_sha256": INDEXER_SHA256,
             "architecture": ARCHITECTURE,
             "run_signature": RUN_SIGNATURE,
         },
@@ -606,7 +619,7 @@ def main():
     OUT.mkdir(parents=True, exist_ok=True)
     os.chmod(OUT, 0o700)
     common.set_seed(SEED)
-    if common.sha256(INDEXER) != common.INDEXER_SHA256:
+    if INDEXER_SHA256 != common.INDEXER_SHA256:
         raise RuntimeError("unexpected indexer hash")
     if not torch.cuda.is_available() or torch.cuda.device_count() != 1:
         raise RuntimeError("expected exactly one visible CUDA device")
@@ -719,8 +732,10 @@ def main():
     history = []
     if resume_path.exists():
         checkpoint = torch.load(resume_path, map_location="cpu", weights_only=False)
-        if checkpoint["contract_sha256"] != common.sha256(CONTRACT):
+        if checkpoint.get("contract_sha256") != CONTRACT_SHA256:
             raise RuntimeError("resume contract mismatch")
+        if checkpoint.get("indexer_sha256") != INDEXER_SHA256:
+            raise RuntimeError("resume indexer mismatch")
         if checkpoint.get("architecture") != ARCHITECTURE:
             raise RuntimeError("resume architecture mismatch")
         if checkpoint.get("run_signature") != RUN_SIGNATURE:
