@@ -159,7 +159,7 @@ def fill_transition_arrays(
         action_types[source_start + 1 : source_start + take + 1], dtype=np.int8
     )
     next_timestamps = timestamps[source_start + 1 : source_start + take + 1]
-    ranking_mask_array[row_index, dest_start:] = np.fromiter(
+    ranking_weights = np.fromiter(
         (
             training_contract.ranking_loss_weight(
                 timestamp,
@@ -169,6 +169,17 @@ def fill_transition_arrays(
             for timestamp in next_timestamps
         ),
         dtype=np.float32,
+        count=take,
+    )
+    ranking_mask_array[row_index, dest_start:] = ranking_weights
+    next_token_array[row_index, dest_start:] = np.fromiter(
+        (
+            training_contract.effective_next_token_type(token_type, ranking_weight)
+            for token_type, ranking_weight in zip(
+                next_token_array[row_index, dest_start:], ranking_weights
+            )
+        ),
+        dtype=np.int8,
         count=take,
     )
     if source_start == 0:
@@ -219,6 +230,9 @@ class FullTrainDataset(Dataset, FeatureCollator):
         self.next_action_type = np.zeros((count, length), dtype=np.int8)
         self.ranking_loss_mask = np.zeros((count, length), dtype=np.float32)
         self.item_counts = np.zeros(item_count + 1, dtype=np.int64)
+        self.valid_transition_count = 0
+        self.active_ranking_transition_count = 0
+        self.masked_ranking_transition_count = 0
         self.filled = 0
         self.item_log_p = None
         self.sid_by_item = sid_by_item
@@ -234,6 +248,14 @@ class FullTrainDataset(Dataset, FeatureCollator):
             raise RuntimeError(f"empty training sequence for user {row['user_id']}")
         self.user_ids[self.filled] = int(row["user_id"])
         np.add.at(self.item_counts, all_items, 1)
+        valid = self.pos[self.filled] > 0
+        self.valid_transition_count += int(valid.sum())
+        self.active_ranking_transition_count += int(
+            ((self.next_token_type[self.filled] == 1) & valid).sum()
+        )
+        self.masked_ranking_transition_count += int(
+            ((self.ranking_loss_mask[self.filled] == 0) & valid).sum()
+        )
         self.filled += 1
 
     def finalize(self):
@@ -243,6 +265,14 @@ class FullTrainDataset(Dataset, FeatureCollator):
         total = int(self.item_counts.sum())
         if total <= 0:
             raise RuntimeError("no training interactions")
+        if (
+            self.active_ranking_transition_count
+            + self.masked_ranking_transition_count
+            != self.valid_transition_count
+        ):
+            raise RuntimeError("ranking-mask transition accounting mismatch")
+        if ENABLE_POST_CUTOFF_EXPOSURE_MASK and self.masked_ranking_transition_count == 0:
+            raise RuntimeError("post-cutoff exposure mask did not remove any transition")
         minimum = float(np.log(1.0 / total))
         self.item_log_p = np.full(len(self.item_counts), minimum, dtype=np.float32)
         self.item_log_p[positive] = np.log(self.item_counts[positive] / total).astype(np.float32)
@@ -787,6 +817,9 @@ def main():
             "training_users": len(train_dataset), "validation_users": len(validation_users),
             "eligible_eval_users": len(eval_dataset), "candidates": len(retrieval_ids),
             "cold_start_candidates": int((internal_ids == 0).sum()),
+            "valid_training_transitions": train_dataset.valid_transition_count,
+            "active_ranking_transitions": train_dataset.active_ranking_transition_count,
+            "masked_ranking_transitions": train_dataset.masked_ranking_transition_count,
         },
         "model": {
             "architecture": "HSTU" if args.use_hstu else "Transformer", "num_blocks": args.num_blocks,
@@ -818,6 +851,8 @@ def main():
             "contract_sha256": common.sha256(CONTRACT),
             "indexer_sha256": common.INDEXER_SHA256,
             "history_filtering": False,
+            "post_cutoff_exposure_mask": ENABLE_POST_CUTOFF_EXPOSURE_MASK,
+            "post_cutoff_exposure_timestamp": POST_CUTOFF_EXPOSURE_TIMESTAMP,
             "sid_mapping_sha256": SID_SHA256,
         },
     }

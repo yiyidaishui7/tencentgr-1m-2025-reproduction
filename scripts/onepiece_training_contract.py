@@ -19,3 +19,9 @@ def ranking_loss_weight(
     if not enabled or next_timestamp is None:
         return 1.0
     return 0.0 if int(next_timestamp) > cutoff_timestamp else 1.0
+
+
+def effective_next_token_type(next_token_type: int, ranking_weight: float) -> int:
+    """Apply a ranking weight to the next-item mask consumed by InfoNCE/SID."""
+
+    return int(next_token_type) if float(ranking_weight) > 0.0 else 0
