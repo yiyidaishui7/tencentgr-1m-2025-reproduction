@@ -64,6 +64,23 @@ def test_reevaluator_binds_all_four_dataset_splits_and_user_row_count():
     assert '"dataset_receipt": dataset_receipt' in source
 
 
+def test_reevaluator_rejects_arrow_files_outside_the_frozen_content_manifest():
+    source = SCRIPT.read_text(encoding="utf-8")
+
+    for digest in (
+        "14a9addcb894d8a10c97cd364d197fd8fd179fbc94d8ced5aef691fd5c2ffa1b",
+        "53031408cec8d88179c28460e2205d4628882e52b35f3da0b85ff514e2e89188",
+        "bd4d0a269df96504f5db443ded25cf5186d5294c4419719db17172416df4e25b",
+        "4d53e58de753a995adff862976be97b280d77271f94aac5febfec81fa616f291",
+        "389f5324ade9deddb34d84e160c4ede9ba8897efe88265c582f5db85af3ae0c2",
+        "17ab92da05c8ba2b46ea4bbc5903b16872f356c90949c42a743675aa5d6f9b41",
+        "d85a8177e25f4c0d0a1676c712cc9e7bf1fef926a1bbf74bb1ff593accedd121",
+    ):
+        assert digest in source
+    assert 'expected["files"]' in source
+    assert 'observed_files != expected["files"]' in source
+
+
 def test_reevaluator_atomically_publishes_a_complete_output_directory():
     source = SCRIPT.read_text(encoding="utf-8")
 
