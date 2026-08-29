@@ -58,25 +58,64 @@ DATASET_CONTRACT = {
         "rows": 1_001_845,
         "fingerprint": "bcabd99de59b2fdd",
         "cached_builder_revision": "4be8735e2a7e9fc11fe7eb2a5e1e06e27c57e453",
-        "cache_files": 4,
+        "files": [
+            {
+                "name": "tencent_gr-1_m-train-00000-of-00004.arrow",
+                "bytes": 541_269_696,
+                "sha256": "bd4d0a269df96504f5db443ded25cf5186d5294c4419719db17172416df4e25b",
+            },
+            {
+                "name": "tencent_gr-1_m-train-00001-of-00004.arrow",
+                "bytes": 550_572_040,
+                "sha256": "4d53e58de753a995adff862976be97b280d77271f94aac5febfec81fa616f291",
+            },
+            {
+                "name": "tencent_gr-1_m-train-00002-of-00004.arrow",
+                "bytes": 555_343_960,
+                "sha256": "389f5324ade9deddb34d84e160c4ede9ba8897efe88265c582f5db85af3ae0c2",
+            },
+            {
+                "name": "tencent_gr-1_m-train-00003-of-00004.arrow",
+                "bytes": 180_973_976,
+                "sha256": "17ab92da05c8ba2b46ea4bbc5903b16872f356c90949c42a743675aa5d6f9b41",
+            },
+        ],
     },
     "item_feat": {
         "rows": 4_783_154,
         "fingerprint": "defdfd291f3184cb",
         "cached_builder_revision": "4be8735e2a7e9fc11fe7eb2a5e1e06e27c57e453",
-        "cache_files": 1,
+        "files": [
+            {
+                "name": "tencent_gr-1_m-train.arrow",
+                "bytes": 545_521_944,
+                "sha256": "53031408cec8d88179c28460e2205d4628882e52b35f3da0b85ff514e2e89188",
+            }
+        ],
     },
     "user_feat": {
         "rows": 1_001_845,
         "fingerprint": "20308ee19a2f0c82",
         "cached_builder_revision": "4be8735e2a7e9fc11fe7eb2a5e1e06e27c57e453",
-        "cache_files": 1,
+        "files": [
+            {
+                "name": "tencent_gr-1_m-train.arrow",
+                "bytes": 81_596_008,
+                "sha256": "d85a8177e25f4c0d0a1676c712cc9e7bf1fef926a1bbf74bb1ff593accedd121",
+            }
+        ],
     },
     "candidate": {
         "rows": 660_000,
         "fingerprint": "932a40e9007e0e8d",
         "cached_builder_revision": "4be8735e2a7e9fc11fe7eb2a5e1e06e27c57e453",
-        "cache_files": 1,
+        "files": [
+            {
+                "name": "tencent_gr-1_m-train.arrow",
+                "bytes": 138_896_400,
+                "sha256": "14a9addcb894d8a10c97cd364d197fd8fd179fbc94d8ced5aef691fd5c2ffa1b",
+            }
+        ],
     },
 }
 REEVALUATION_CONFIG = {
@@ -101,12 +140,12 @@ WORK_OUTPUT = OUTPUT.with_name(
 def build_dataset_receipt(name: str, dataset) -> dict:
     expected = DATASET_CONTRACT[name]
     fingerprint = str(dataset._fingerprint)
-    cache_files = []
-    for entry in dataset.cache_files:
+    observed_files = []
+    for entry in sorted(dataset.cache_files, key=lambda value: value["filename"]):
         path = Path(entry["filename"]).expanduser().resolve()
         if expected["cached_builder_revision"] not in path.parts:
             raise RuntimeError(f"unexpected cached builder revision for {name}")
-        cache_files.append(
+        observed_files.append(
             {
                 "name": path.name,
                 "bytes": path.stat().st_size,
@@ -116,14 +155,14 @@ def build_dataset_receipt(name: str, dataset) -> dict:
     if (
         len(dataset) != expected["rows"]
         or fingerprint != expected["fingerprint"]
-        or len(cache_files) != expected["cache_files"]
+        or observed_files != expected["files"]
     ):
         raise RuntimeError(f"dataset contract mismatch for {name}")
     return {
         "rows": len(dataset),
         "fingerprint": fingerprint,
         "cached_builder_revision": expected["cached_builder_revision"],
-        "cache_files": cache_files,
+        "cache_files": observed_files,
     }
 
 
