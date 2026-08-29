@@ -17,6 +17,7 @@ from datasets import load_dataset
 from torch.utils.data import DataLoader, Dataset
 
 import onepiece_common as common
+import onepiece_training_contract as training_contract
 
 
 ROOT = common.ROOT
@@ -68,6 +69,13 @@ SID_LOSS_DELAY_STEPS = int(os.environ.get("ONEPIECE_SID_LOSS_DELAY_STEPS", "0"))
 ENABLE_BEAM_EVAL = os.environ.get("ONEPIECE_ENABLE_BEAM_EVAL", "0").strip().lower() in {"1", "true", "yes"}
 BEAM_SIZE = int(os.environ.get("ONEPIECE_BEAM_SIZE", "20"))
 BEAM_TOP_K = int(os.environ.get("ONEPIECE_BEAM_TOP_K", "384"))
+ENABLE_POST_CUTOFF_EXPOSURE_MASK = os.environ.get(
+    "ONEPIECE_ENABLE_POST_CUTOFF_EXPOSURE_MASK", "0"
+).strip().lower() in {"1", "true", "yes"}
+POST_CUTOFF_EXPOSURE_TIMESTAMP = int(os.environ.get(
+    "ONEPIECE_POST_CUTOFF_EXPOSURE_TIMESTAMP",
+    str(training_contract.POST_CUTOFF_EXPOSURE_TIMESTAMP),
+))
 if min(
     MAXLEN, BATCH_SIZE, EPOCHS, EVAL_BATCH_SIZE, CANDIDATE_BATCH_SIZE,
     LOG_EVERY, WARMUP_STEPS, HIDDEN_UNITS, NUM_BLOCKS, NUM_HEADS,
@@ -85,6 +93,8 @@ if ENABLE_BEAM_EVAL and not ENABLE_SID:
     raise RuntimeError("beam evaluation requires SID training")
 if BEAM_SIZE <= 0 or BEAM_TOP_K < 10:
     raise RuntimeError("invalid beam-search dimensions")
+if POST_CUTOFF_EXPOSURE_TIMESTAMP <= 0:
+    raise RuntimeError("ONEPIECE_POST_CUTOFF_EXPOSURE_TIMESTAMP must be positive")
 
 RUN_CONFIG = {
     "architecture": ARCHITECTURE,
@@ -110,6 +120,8 @@ RUN_CONFIG = {
     "beam_eval": ENABLE_BEAM_EVAL,
     "beam_size": BEAM_SIZE if ENABLE_BEAM_EVAL else None,
     "beam_top_k": BEAM_TOP_K if ENABLE_BEAM_EVAL else None,
+    "post_cutoff_exposure_mask": ENABLE_POST_CUTOFF_EXPOSURE_MASK,
+    "post_cutoff_exposure_timestamp": POST_CUTOFF_EXPOSURE_TIMESTAMP,
 }
 RUN_SIGNATURE = hashlib.sha256(
     json.dumps(RUN_CONFIG, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -124,10 +136,14 @@ def write_status(state, **values):
     os.chmod(STATUS, 0o600)
 
 
-def fill_transition_arrays(seq_array, pos_array, token_array, next_token_array, next_action_array, row_index, events):
+def fill_transition_arrays(
+    seq_array, pos_array, token_array, next_token_array, next_action_array,
+    ranking_mask_array, row_index, events,
+):
     valid = [event for event in events if event["item_id"] is not None and int(event["item_id"]) > 0]
     item_ids = [0] + [int(event["item_id"]) for event in valid]
     action_types = [0] + [0 if event["action_type"] is None else int(event["action_type"]) for event in valid]
+    timestamps = [None] + [event.get("timestamp") for event in valid]
     if len(item_ids) < 2:
         return False, np.empty(0, dtype=np.int64)
     length = MAXLEN + 1
@@ -141,6 +157,19 @@ def fill_transition_arrays(seq_array, pos_array, token_array, next_token_array, 
     next_token_array[row_index, dest_start:] = 1
     next_action_array[row_index, dest_start:] = np.asarray(
         action_types[source_start + 1 : source_start + take + 1], dtype=np.int8
+    )
+    next_timestamps = timestamps[source_start + 1 : source_start + take + 1]
+    ranking_mask_array[row_index, dest_start:] = np.fromiter(
+        (
+            training_contract.ranking_loss_weight(
+                timestamp,
+                enabled=ENABLE_POST_CUTOFF_EXPOSURE_MASK,
+                cutoff_timestamp=POST_CUTOFF_EXPOSURE_TIMESTAMP,
+            )
+            for timestamp in next_timestamps
+        ),
+        dtype=np.float32,
+        count=take,
     )
     if source_start == 0:
         token_array[row_index, dest_start] = 2
@@ -188,6 +217,7 @@ class FullTrainDataset(Dataset, FeatureCollator):
         self.token_type = np.zeros((count, length), dtype=np.int8)
         self.next_token_type = np.zeros((count, length), dtype=np.int8)
         self.next_action_type = np.zeros((count, length), dtype=np.int8)
+        self.ranking_loss_mask = np.zeros((count, length), dtype=np.float32)
         self.item_counts = np.zeros(item_count + 1, dtype=np.int64)
         self.filled = 0
         self.item_log_p = None
@@ -198,7 +228,7 @@ class FullTrainDataset(Dataset, FeatureCollator):
             raise RuntimeError("too many training rows")
         success, all_items = fill_transition_arrays(
             self.seq, self.pos, self.token_type, self.next_token_type,
-            self.next_action_type, self.filled, row["seq"],
+            self.next_action_type, self.ranking_loss_mask, self.filled, row["seq"],
         )
         if not success:
             raise RuntimeError(f"empty training sequence for user {row['user_id']}")
@@ -231,6 +261,7 @@ class FullTrainDataset(Dataset, FeatureCollator):
         token_type = self.token_type[indices]
         next_token_type = self.next_token_type[indices]
         next_action_type = self.next_action_type[indices]
+        ranking_loss_mask = self.ranking_loss_mask[indices]
         seq_feat = self.feature_tensors(seq, token_type, user_ids)
         pos_feat = {
             name: torch.from_numpy(values[pos])
@@ -252,7 +283,7 @@ class FullTrainDataset(Dataset, FeatureCollator):
             seq_feat, pos_feat, torch.zeros(shape, dtype=torch.int32),
             sid,
             torch.from_numpy(self.item_log_p[pos]),
-            torch.ones(shape, dtype=torch.float32),
+            torch.from_numpy(ranking_loss_mask),
         )
 
 
