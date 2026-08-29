@@ -34,3 +34,41 @@ def test_reevaluator_does_not_retrain_or_create_optimizer_state():
     assert "optimizer" not in source
     assert "loss.backward" not in source
     assert "model.load_state_dict" in source
+
+
+def test_reevaluator_enters_offline_mode_before_importing_huggingface_datasets():
+    source = SCRIPT.read_text(encoding="utf-8")
+
+    assert source.index('os.environ["HF_HUB_OFFLINE"] = "1"') < source.index(
+        "from datasets import load_dataset"
+    )
+    assert source.index('os.environ["HF_DATASETS_OFFLINE"] = "1"') < source.index(
+        "from datasets import load_dataset"
+    )
+
+
+def test_reevaluator_binds_all_four_dataset_splits_and_user_row_count():
+    source = SCRIPT.read_text(encoding="utf-8")
+
+    assert "DATASET_CONTRACT" in source
+    for name, fingerprint in {
+        "seq": "bcabd99de59b2fdd",
+        "item_feat": "defdfd291f3184cb",
+        "user_feat": "20308ee19a2f0c82",
+        "candidate": "932a40e9007e0e8d",
+    }.items():
+        assert name in source
+        assert fingerprint in source
+    assert "len(user_dataset) != user_count" in source
+    assert '"dataset_contract": DATASET_CONTRACT' in source
+    assert '"dataset_receipt": dataset_receipt' in source
+
+
+def test_reevaluator_atomically_publishes_a_complete_output_directory():
+    source = SCRIPT.read_text(encoding="utf-8")
+
+    assert "WORK_OUTPUT" in source
+    assert "os.replace(WORK_OUTPUT, OUTPUT)" in source
+    assert source.index("os.replace(WORK_OUTPUT, OUTPUT)") < source.index(
+        'write_status("complete", **result)'
+    )
