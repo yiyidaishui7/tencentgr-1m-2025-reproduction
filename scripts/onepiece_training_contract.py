@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 
-# Frozen upstream OnePiece uses 2025-05-31 00:00:00 UTC as the boundary after
-# which the available sequence labels are exposure-only.
+# Frozen upstream OnePiece uses 2025-05-31 00:00:00 Asia/Shanghai
+# (2025-05-30 16:00:00 UTC) as its post-cutoff boundary.
 POST_CUTOFF_EXPOSURE_TIMESTAMP = 1_748_620_800
 
 
