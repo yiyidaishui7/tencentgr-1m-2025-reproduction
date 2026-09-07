@@ -1,0 +1,293 @@
+{
+  "comparisons": {
+    "post_cutoff_mask_minus_control": {
+      "competition_score": {
+        "mean_delta": -0.0004676041747079251,
+        "normal_95_high": 0.0004406369272894239,
+        "normal_95_low": -0.001375845276705274
+      },
+      "hit_rate_at_10": {
+        "mean_delta": -0.0007349121273171906,
+        "normal_95_high": 0.0007556000478178641,
+        "normal_95_low": -0.0022254243024522453
+      },
+      "ndcg_at_10": {
+        "mean_delta": -0.0003475092974486898,
+        "normal_95_high": 0.0003981059018609566,
+        "normal_95_low": -0.0010931244967583363
+      },
+      "relative_competition_score": -0.005610413804346681
+    }
+  },
+  "manifests": {
+    "control": {
+      "config.json": "dd271269d752e342cbee6df7bdfcc255a1c5e3ce45056a59010aa09def9abd25",
+      "history.json": "3c37f2c3084a9bb2b4d91703892eafe4b9807dccb117cb7f7c59af0a92f7e420",
+      "model.pt": "2d9fa1da06c06b1789141c504c3ff987f7e25b0b73b065afb2e157093e60517f",
+      "offline_metrics.json": "3a6a70b79ab1e02e7ab6f5e99361423ab09d94037d59461af42739be98b555e7",
+      "offline_predictions.npz": "80407b78e72665f4cf21e69883d572f48c14e904418b8b3a5ac95f4f93d3932f"
+    },
+    "post_cutoff_mask": {
+      "config.json": "5a19f610478c1d08ca05e014de2c74b3495ddfbf5b51dc44f222004ba6675ec4",
+      "history.json": "f243c4621b3f6b23e6f1c0833b8917b49f286f56ce2760dbd7f0f06bfa5987e3",
+      "model.pt": "f9c23fa09ec5102d50ea1de1be383ce3defbfaa642bd221704f62ff4c14a46f0",
+      "offline_metrics.json": "b6855e330d1203fd44375f28035fba169f6a23e9bbae0559ba48d2c48c06156c",
+      "offline_predictions.npz": "e4249dd355f0f4b39d6265ae58bcf893c21da4689e15b10e8b150bea6d2e3347"
+    }
+  },
+  "metadata": {
+    "control": {
+      "experiment_id": "s8512",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1402098128
+      },
+      "resources": {
+        "device": "NVIDIA H200",
+        "peak_memory_mib": 26787.39990234375,
+        "physical_gpu": 5,
+        "wall_seconds": 10947.571495056152
+      },
+      "run_signature": "aec3f23d055f223fee76a1e8cfc34fcbacb0ee36e2a125d79fa9d26fce08a11a",
+      "training": {
+        "batch_size": 32,
+        "epochs": 6,
+        "global_steps": 169056,
+        "history": [
+          {
+            "epoch": 1,
+            "last_loss": 4.644472599029541,
+            "learning_rate": 0.000936854530302438,
+            "mean_loss": 5.50980834868535,
+            "seconds": 2121.0238330364227
+          },
+          {
+            "epoch": 2,
+            "last_loss": 4.534484386444092,
+            "learning_rate": 0.0007553768599656601,
+            "mean_loss": 4.604975591340165,
+            "seconds": 1718.5087792873383
+          },
+          {
+            "epoch": 3,
+            "last_loss": 4.4438395500183105,
+            "learning_rate": 0.0005046733632095709,
+            "mean_loss": 4.379342599137813,
+            "seconds": 1709.8913309574127
+          },
+          {
+            "epoch": 4,
+            "last_loss": 4.246964931488037,
+            "learning_rate": 0.0002527030428642824,
+            "mean_loss": 4.245290812843229,
+            "seconds": 1710.0327458381653
+          },
+          {
+            "epoch": 5,
+            "last_loss": 4.183567523956299,
+            "learning_rate": 6.776830370282949e-05,
+            "mean_loss": 4.162500186180743,
+            "seconds": 1710.4972140789032
+          },
+          {
+            "epoch": 6,
+            "last_loss": 4.083395481109619,
+            "learning_rate": 0.0,
+            "mean_loss": 4.121695288206825,
+            "seconds": 1717.6272161006927
+          }
+        ],
+        "seconds": 10850.640544652939
+      }
+    },
+    "post_cutoff_mask": {
+      "experiment_id": "xm512",
+      "model": {
+        "architecture": "HSTU",
+        "hidden_units": 512,
+        "loss": "sample-bias-corrected InfoNCE",
+        "maxlen": 101,
+        "num_blocks": 8,
+        "num_heads": 8,
+        "parameters": 1402098128,
+        "sid_auxiliary": false,
+        "sid_codebook_size": null,
+        "sid_loss_delay_steps": null,
+        "sid_loss_warmup_steps": null,
+        "sid_loss_weight": null
+      },
+      "resources": {
+        "device": "NVIDIA H200",
+        "peak_memory_mib": 26787.39990234375,
+        "physical_gpu": 5,
+        "wall_seconds": 17220.68718981743
+      },
+      "run_signature": "b559c43287912292635f967861181523381ba0b83f67c39023304f7c0836bcf8",
+      "training": {
+        "batch_size": 32,
+        "epochs": 6,
+        "global_steps": 169056,
+        "history": [
+          {
+            "epoch": 1,
+            "last_loss": 4.644274711608887,
+            "learning_rate": 0.000936854530302438,
+            "mean_loss": 5.50436339755413,
+            "mean_sid1_loss": null,
+            "mean_sid2_loss": null,
+            "mean_sid_loss_weight": null,
+            "seconds": 6235.070198297501
+          },
+          {
+            "epoch": 2,
+            "last_loss": 4.523560523986816,
+            "learning_rate": 0.0007553768599656601,
+            "mean_loss": 4.603428883013707,
+            "mean_sid1_loss": null,
+            "mean_sid2_loss": null,
+            "mean_sid_loss_weight": null,
+            "seconds": 3848.1750741004944
+          },
+          {
+            "epoch": 3,
+            "last_loss": 4.4420366287231445,
+            "learning_rate": 0.0005046733632095709,
+            "mean_loss": 4.3789293554139235,
+            "mean_sid1_loss": null,
+            "mean_sid2_loss": null,
+            "mean_sid_loss_weight": null,
+            "seconds": 1702.8861968517303
+          },
+          {
+            "epoch": 4,
+            "last_loss": 4.246622085571289,
+            "learning_rate": 0.0002527030428642824,
+            "mean_loss": 4.2449387097683635,
+            "mean_sid1_loss": null,
+            "mean_sid2_loss": null,
+            "mean_sid_loss_weight": null,
+            "seconds": 1703.998985528946
+          },
+          {
+            "epoch": 5,
+            "last_loss": 4.181044578552246,
+            "learning_rate": 6.776830370282949e-05,
+            "mean_loss": 4.1620200287798195,
+            "mean_sid1_loss": null,
+            "mean_sid2_loss": null,
+            "mean_sid_loss_weight": null,
+            "seconds": 1712.2833886146545
+          },
+          {
+            "epoch": 6,
+            "last_loss": 4.073337078094482,
+            "learning_rate": 0.0,
+            "mean_loss": 4.121175466918729,
+            "mean_sid1_loss": null,
+            "mean_sid2_loss": null,
+            "mean_sid_loss_weight": null,
+            "seconds": 1699.6572589874268
+          }
+        ],
+        "seconds": 17070.198472976685
+      }
+    }
+  },
+  "overall": {
+    "control": {
+      "competition_score": 0.08334575505743427,
+      "evaluated_users": 78921,
+      "hit_rate_at_10": 0.12081701955119677,
+      "hits": 9535,
+      "ndcg_at_10": 0.06651083912545402
+    },
+    "post_cutoff_mask": {
+      "competition_score": 0.08287815088272635,
+      "evaluated_users": 78921,
+      "hit_rate_at_10": 0.12008210742387958,
+      "hits": 9477,
+      "ndcg_at_10": 0.06616332982800534
+    }
+  },
+  "reference": "control",
+  "row_alignment": {
+    "keys": [
+      "user_reids",
+      "target_retrieval_ids",
+      "prefix_lengths"
+    ],
+    "rows": 78921
+  },
+  "slices": {
+    "history_0_20": {
+      "control": {
+        "competition_score": 0.09006404267008682,
+        "evaluated_users": 1125,
+        "hit_rate_at_10": 0.12711111111111112,
+        "hits": 143,
+        "ndcg_at_10": 0.07341970757339474
+      },
+      "post_cutoff_mask": {
+        "competition_score": 0.09163016951110393,
+        "evaluated_users": 1125,
+        "hit_rate_at_10": 0.13244444444444445,
+        "hits": 149,
+        "ndcg_at_10": 0.0732933213526466
+      }
+    },
+    "history_21_50": {
+      "control": {
+        "competition_score": 0.10169619148852964,
+        "evaluated_users": 4366,
+        "hit_rate_at_10": 0.14704535043518094,
+        "hits": 642,
+        "ndcg_at_10": 0.08132193167191817
+      },
+      "post_cutoff_mask": {
+        "competition_score": 0.10504063845630306,
+        "evaluated_users": 4366,
+        "hit_rate_at_10": 0.1516262024736601,
+        "hits": 662,
+        "ndcg_at_10": 0.08411089230357745
+      }
+    },
+    "history_51_80": {
+      "control": {
+        "competition_score": 0.09397782046558978,
+        "evaluated_users": 23339,
+        "hit_rate_at_10": 0.1363383178370967,
+        "hits": 3182,
+        "ndcg_at_10": 0.07494629266099972
+      },
+      "post_cutoff_mask": {
+        "competition_score": 0.09326540884228471,
+        "evaluated_users": 23339,
+        "hit_rate_at_10": 0.1351386091949098,
+        "hits": 3154,
+        "ndcg_at_10": 0.07445281158240968
+      }
+    },
+    "history_81_plus": {
+      "control": {
+        "competition_score": 0.07664159954879324,
+        "evaluated_users": 50091,
+        "hit_rate_at_10": 0.11115769299874229,
+        "hits": 5568,
+        "ndcg_at_10": 0.061134369158236425
+      },
+      "post_cutoff_mask": {
+        "competition_score": 0.07591011959524369,
+        "evaluated_users": 50091,
+        "hit_rate_at_10": 0.11003972769559402,
+        "hits": 5512,
+        "ndcg_at_10": 0.06057652755015877
+      }
+    }
+  },
+  "status": "pass"
+}

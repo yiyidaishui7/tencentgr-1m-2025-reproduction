@@ -81,3 +81,23 @@ Evidence milestones:
 - The private Hugging Face archive passed read-back verification at commit
   `686e5760a89014c9dcb32f58f7f32f559779de4e`: 151 files and 29,874,511,230 bytes;
   19 LFS objects matched remote OIDs and 132 small files matched downloaded SHA-256.
+
+## OnePiece post-cutoff mask and aligned-control follow-up
+
+The original six-row table above remains the historical 660k-candidate result
+set. Two release-only comparisons extend the audit without rewriting it:
+
+| Evidence row | Checkpoint and evaluation protocol | Score | Delta vs historical `s8512` | Normal 95% interval |
+|---|---|---:|---:|---:|
+| Historical control | `s8512`; 660k candidates, no history filtering | 0.0833458 | reference | — |
+| Post-cutoff exposure mask | `xm512`; historical 660k candidates, no history filtering | 0.0828782 | -0.0004676 (-0.56%) | [-0.0013758, 0.0004406] |
+| Aligned control | same `s8512`; 511,029 warm candidates, history filtering | 0.0855212 | +0.0021755 (+2.61%) | [0.0019130, 0.0024380] |
+
+The post-cutoff interval crosses zero. The aligned-control delta is a
+same-checkpoint evaluation-protocol effect, **not a model improvement**. This is
+not a complete 2x2 because `xm512` was not re-evaluated on the aligned protocol;
+the SID variants were not re-evaluated either. These follow-ups do not exercise
+Beam retrieval, and the aligned receipt records `beam_eval=false` and
+`beam_ann_fallback=false`. Machine-readable evidence is in
+[`onepiece_post_cutoff_mask_comparison.json`](../metrics/onepiece_post_cutoff_mask_comparison.json)
+and [`onepiece_aligned_control_comparison.json`](../metrics/onepiece_aligned_control_comparison.json).

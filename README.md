@@ -38,12 +38,27 @@ frozen model-derived two-level semantic-ID auxiliary objective at the selected
 | **HSTU 8×512 + collision-free SID (0.02)** | 1,423,127,274 | 0.1207663 | **0.0666985** | **0.0834596** | 226.7 min |
 | HSTU 8×512 + collision-free SID (0.05) | 1,423,127,274 | 0.1199427 | 0.0660450 | 0.0827533 | 240.2 min |
 
-These are verified historical-protocol scores: the 660k pool includes 148,971
-cold candidates and user history was not filtered. The current runner filters
-to 511,029 warm candidates, masks seen items, and gives Beam an ANN fallback;
-aligned re-evaluation is reported separately rather than retroactively changing
-the table. The archived SID mapping is a zero-collision global-residual
-approximation, not a strict within-L1 implementation of the OnePiece README.
+These six rows remain the verified historical-protocol scores: the 660k pool
+includes 148,971 cold candidates and user history was not filtered. The
+archived SID mapping is a zero-collision global-residual approximation, not a
+strict within-L1 implementation of the OnePiece README.
+
+Two follow-up comparisons are published separately and do not rewrite that
+historical table:
+
+| Follow-up | Evaluation protocol | Score | Delta vs historical `s8512` | Normal 95% interval |
+|---|---|---:|---:|---:|
+| Post-cutoff exposure mask (`xm512`) | historical 660k candidates; no history filtering | 0.0828782 | -0.0004676 (-0.56%) | [-0.0013758, 0.0004406] |
+| Aligned control (same `s8512` checkpoint) | 511,029 warm candidates; history filtering | 0.0855212 | +0.0021755 (+2.61%) | [0.0019130, 0.0024380] |
+
+The post-cutoff interval crosses zero. The aligned-control difference comes from
+changing the evaluation protocol for the same checkpoint, so this is **not a model improvement**.
+This is not a complete 2x2: `xm512` was not re-evaluated
+under the aligned protocol, and the SID variants were not re-evaluated. No Beam
+path was used; the aligned receipt records `beam_eval=false` and
+`beam_ann_fallback=false`. See the [alignment report](docs/ONEPIECE_ALIGNMENT_RESULTS.md)
+and the machine-readable [mask](metrics/onepiece_post_cutoff_mask_comparison.json)
+and [aligned-control](metrics/onepiece_aligned_control_comparison.json) comparisons.
 
 Scaling from 4×128 to 8×512 raises the fixed-seed score by 25.63%. The first
 colliding, unweighted SID ablation regressed 5.87%; collision-free IDs plus a
@@ -206,6 +221,8 @@ python offline_eval.py \
 ├── metrics/onepiece_architecture_comparison.json # controlled encoder audit
 ├── metrics/onepiece_scaling_comparison.json      # 4×128 / 8×256 / 8×512
 ├── metrics/onepiece_sid_comparison.json          # matched SID ablation
+├── metrics/onepiece_post_cutoff_mask_comparison.json # exposure-mask comparison
+├── metrics/onepiece_aligned_control_comparison.json  # same-checkpoint protocol audit
 └── docs/                              # results and resume-ready material
 ```
 
