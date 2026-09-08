@@ -82,7 +82,7 @@ Evidence milestones:
   `686e5760a89014c9dcb32f58f7f32f559779de4e`: 151 files and 29,874,511,230 bytes;
   19 LFS objects matched remote OIDs and 132 small files matched downloaded SHA-256.
 
-## OnePiece post-cutoff mask and aligned-control follow-up
+## 2026-09-07 historical release: OnePiece mask and aligned-control follow-up
 
 The original six-row table above remains the historical 660k-candidate result
 set. Two release-only comparisons extend the audit without rewriting it:
@@ -94,10 +94,62 @@ set. Two release-only comparisons extend the audit without rewriting it:
 | Aligned control | same `s8512`; 511,029 warm candidates, history filtering | 0.0855212 | +0.0021755 (+2.61%) | [0.0019130, 0.0024380] |
 
 The post-cutoff interval crosses zero. The aligned-control delta is a
-same-checkpoint evaluation-protocol effect, **not a model improvement**. This is
-not a complete 2x2 because `xm512` was not re-evaluated on the aligned protocol;
-the SID variants were not re-evaluated either. These follow-ups do not exercise
+same-checkpoint evaluation-protocol effect, **not a model improvement**. At that
+release, this was not a complete 2x2 because `xm512` had not been re-evaluated on
+the aligned protocol; the SID variants had not been re-evaluated either. Those follow-ups do not exercise
 Beam retrieval, and the aligned receipt records `beam_eval=false` and
 `beam_ann_fallback=false`. Machine-readable evidence is in
 [`onepiece_post_cutoff_mask_comparison.json`](../metrics/onepiece_post_cutoff_mask_comparison.json)
 and [`onepiece_aligned_control_comparison.json`](../metrics/onepiece_aligned_control_comparison.json).
+
+## 2026-09-08 supplement: complete mask × protocol 2×2 and aligned SID
+
+Three new evaluations reuse the mask and SID 0.02/0.05 checkpoints without
+retraining. Together with the existing aligned control and four historical
+prediction sets, all eight artifacts passed SHA-256 verification, source-model
+binding, frozen-contract checks, row alignment and metric recomputation.
+
+<!-- AUTO-GENERATED values from metrics/onepiece_followup_comparison.json -->
+| Existing checkpoint | Historical score | Aligned score | State |
+|---|---:|---:|---|
+| Control (`s8512`) | 0.0833458 | 0.0855212 | complete/verified |
+| Post-cutoff mask (`xm512`) | 0.0828782 | 0.0848123 | complete/verified |
+| Collision-free SID (0.02) | 0.0834596 | 0.0851821 | complete/verified |
+| Collision-free SID (0.05) | 0.0827533 | 0.0849867 | complete/verified |
+
+| Comparison | Overall score delta | Paired normal 95% interval |
+|---|---:|---:|
+| Aligned mask − aligned control | -0.0007089 | [-0.0016229, 0.0002051] |
+| Aligned SID 0.02 − aligned control | -0.0003391 | [-0.0012484, 0.0005701] |
+| Aligned SID 0.05 − aligned control | -0.0005345 | [-0.0014464, 0.0003774] |
+| Mask × protocol interaction | -0.0002413 | [-0.0005553, 0.0000726] |
+| Control: aligned − historical | +0.0021755 | [0.0019130, 0.0024380] |
+| Mask: aligned − historical | +0.0019341 | [0.0016792, 0.0021890] |
+| SID 0.02: aligned − historical | +0.0017226 | [0.0014813, 0.0019638] |
+| SID 0.05: aligned − historical | +0.0022334 | [0.0019700, 0.0024968] |
+<!-- END AUTO-GENERATED values -->
+
+All comparisons use the same 78,921 users. Historical evaluation retains
+660,000 candidates and does not filter user history. Every aligned run excludes
+148,971 cold candidates, evaluates 511,029 warm candidates, masks 3,531,517
+user-history candidate pairs, records zero history overlap and reverifies the
+dataset receipt. The supplement compares ANN Top-10, not Beam results; aligned
+receipts record `beam_eval=false` and `beam_ann_fallback=false`.
+
+The aligned control is the highest point estimate, but the three overall score
+model-difference intervals and the overall score interaction interval cross zero. The interaction is
+`(aligned_mask - aligned_control) - (historical_mask - historical_control)`.
+The four positive same-checkpoint overall score protocol intervals measure the joint
+candidate/history filtering effect, **not a model improvement**. Each configuration
+has one training seed; per-user intervals are unadjusted for multiple comparisons
+and exclude training-seed variance. No stable model gain/loss or interaction is
+established. The original six-row table and the two 2026-09-07 comparison JSONs
+remain unchanged.
+
+Full-precision metrics, history slices and source hashes are in
+[`onepiece_followup_comparison.json`](../metrics/onepiece_followup_comparison.json).
+Recompute using [`compare_onepiece_followup.py`](../scripts/compare_onepiece_followup.py);
+the eight-input command is documented in the
+[alignment report](ONEPIECE_ALIGNMENT_RESULTS.md#补充比较的复算入口).
+This completion state refers to the verified evaluation artifacts, not a new
+remote-archive acceptance claim.

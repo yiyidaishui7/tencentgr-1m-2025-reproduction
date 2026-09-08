@@ -43,8 +43,8 @@ includes 148,971 cold candidates and user history was not filtered. The
 archived SID mapping is a zero-collision global-residual approximation, not a
 strict within-L1 implementation of the OnePiece README.
 
-Two follow-up comparisons are published separately and do not rewrite that
-historical table:
+The 2026-09-07 historical release published two follow-up comparisons separately,
+without rewriting that historical table:
 
 | Follow-up | Evaluation protocol | Score | Delta vs historical `s8512` | Normal 95% interval |
 |---|---|---:|---:|---:|
@@ -53,8 +53,8 @@ historical table:
 
 The post-cutoff interval crosses zero. The aligned-control difference comes from
 changing the evaluation protocol for the same checkpoint, so this is **not a model improvement**.
-This is not a complete 2x2: `xm512` was not re-evaluated
-under the aligned protocol, and the SID variants were not re-evaluated. No Beam
+That release did not contain a complete 2x2: `xm512` had not been re-evaluated
+under the aligned protocol, and the SID variants had not been re-evaluated. No Beam
 path was used; the aligned receipt records `beam_eval=false` and
 `beam_ann_fallback=false`. See the [alignment report](docs/ONEPIECE_ALIGNMENT_RESULTS.md)
 and the machine-readable [mask](metrics/onepiece_post_cutoff_mask_comparison.json)
@@ -63,8 +63,43 @@ and [aligned-control](metrics/onepiece_aligned_control_comparison.json) comparis
 Scaling from 4×128 to 8×512 raises the fixed-seed score by 25.63%. The first
 colliding, unweighted SID ablation regressed 5.87%; collision-free IDs plus a
 0.02 linearly warmed auxiliary weight recover that regression and finish 0.14%
-above no SID, with a paired interval that crosses zero. Every comparison uses
-the same 78,921 row-aligned users and exact 660k-candidate Top-10 protocol.
+above no SID, with a paired interval that crosses zero. These historical scaling
+and SID comparisons use the same 78,921 row-aligned users and exact
+660k-candidate Top-10 protocol.
+
+### 2026-09-08 aligned-evaluation supplement
+
+Three additional evaluations of existing checkpoints complete the control/mask
+× historical/aligned 2×2 and add aligned SID weights 0.02/0.05; no model was
+retrained. All eight artifacts share 78,921 row-aligned users. The aligned
+protocol excludes 148,971 cold candidates from the original 660,000 and filters
+user history over the remaining 511,029 candidates.
+
+<!-- AUTO-GENERATED values from metrics/onepiece_followup_comparison.json -->
+| Existing checkpoint | Historical score | Aligned score |
+|---|---:|---:|
+| Control (`s8512`) | 0.0833458 | 0.0855212 |
+| Post-cutoff mask (`xm512`) | 0.0828782 | 0.0848123 |
+| Collision-free SID (0.02) | 0.0834596 | 0.0851821 |
+| Collision-free SID (0.05) | 0.0827533 | 0.0849867 |
+
+| Aligned comparison | Overall score delta | Paired normal 95% interval |
+|---|---:|---:|
+| Mask − control | -0.0007089 | [-0.0016229, 0.0002051] |
+| SID 0.02 − control | -0.0003391 | [-0.0012484, 0.0005701] |
+| SID 0.05 − control | -0.0005345 | [-0.0014464, 0.0003774] |
+| Mask × protocol interaction | -0.0002413 | [-0.0005553, 0.0000726] |
+<!-- END AUTO-GENERATED values -->
+
+The control has the highest aligned point estimate, but all four overall score intervals above
+cross zero: they establish neither a stable model gain/loss nor an interaction.
+All four same-checkpoint overall score protocol effects have positive intervals; these remain
+**evaluation-protocol effects, not model improvements**. This supplement compares
+ANN Top-10 only, not Beam outputs. It uses one training seed and unadjusted paired
+per-user intervals, which do not measure training-seed variance. See the
+[full results and reproduction CLI](docs/ONEPIECE_ALIGNMENT_RESULTS.md),
+[strict comparison JSON](metrics/onepiece_followup_comparison.json), and
+[`compare_onepiece_followup.py`](scripts/compare_onepiece_followup.py).
 
 ## Results at a glance
 
@@ -223,6 +258,7 @@ python offline_eval.py \
 ├── metrics/onepiece_sid_comparison.json          # matched SID ablation
 ├── metrics/onepiece_post_cutoff_mask_comparison.json # exposure-mask comparison
 ├── metrics/onepiece_aligned_control_comparison.json  # same-checkpoint protocol audit
+├── metrics/onepiece_followup_comparison.json         # full mask × protocol 2×2 and aligned SID
 └── docs/                              # results and resume-ready material
 ```
 

@@ -33,7 +33,15 @@ This page is the final entry point for resume use, reproduction, and technical i
 - Drift-resistant 2x2 plan generator: `python scripts/plan_2x2_experiments.py --help`
 - OnePiece HSTU/Transformer runner: `python scripts/run_onepiece_formal.py`
 - Machine-readable scaling and SID comparisons: `metrics/onepiece_scaling_comparison.json`, `metrics/onepiece_sid_comparison.json`, and `metrics/onepiece_alignment_comparison.json`
-- Post-cutoff mask comparison on the historical 660k/no-history-filtering protocol: `metrics/onepiece_post_cutoff_mask_comparison.json`
-- Same-`s8512` aligned-control comparison on 511,029 warm candidates with history filtering: `metrics/onepiece_aligned_control_comparison.json`
+- 2026-09-07 historical-release post-cutoff mask comparison on the 660k/no-history-filtering protocol: `metrics/onepiece_post_cutoff_mask_comparison.json`
+- 2026-09-07 historical-release same-`s8512` aligned-control comparison on 511,029 warm candidates with history filtering: `metrics/onepiece_aligned_control_comparison.json`
+- [2026-09-08 complete mask × protocol 2×2 and aligned SID comparison](metrics/onepiece_followup_comparison.json): eight verified artifact sets, four existing checkpoints, no retraining; the historical six-row table and both 2026-09-07 comparison JSONs remain unchanged.
+- [Eight-artifact comparison CLI](scripts/compare_onepiece_followup.py): `python scripts/compare_onepiece_followup.py --help`; the complete command and paired intervals are in the [alignment report](docs/ONEPIECE_ALIGNMENT_RESULTS.md#补充比较的复算入口).
+
+The 2026-09-08 supplement compares ANN Top-10 only. Its aligned control has the
+highest point estimate, but the mask/SID model contrasts and the 2×2 interaction
+all have overall score intervals crossing zero. Positive same-checkpoint overall score protocol effects
+are not model improvements. The evidence is single-seed, with unadjusted paired
+per-user intervals rather than training-seed uncertainty.
 
 The full private evidence archive is intentionally not linked from the public repository. It contains restricted raw artifacts, PyTorch checkpoints, predictions, and execution logs. Public claims must remain reproducible from the documented protocol and published aggregate evidence.
