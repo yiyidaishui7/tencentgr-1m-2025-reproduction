@@ -6,9 +6,11 @@ import types
 import numpy as np
 
 
+torch_was_stubbed = False
 try:
     import torch  # noqa: F401
 except ModuleNotFoundError:
+    torch_was_stubbed = True
     torch_stub = types.ModuleType("torch")
     torch_stub.utils = types.SimpleNamespace(
         data=types.SimpleNamespace(Dataset=object),
@@ -17,6 +19,9 @@ except ModuleNotFoundError:
 
 
 from dataset import MyDataset
+
+if torch_was_stubbed:
+    del sys.modules["torch"]
 
 
 def _dataset_with(records: list[tuple], *, maxlen: int = 4) -> MyDataset:

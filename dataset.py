@@ -289,7 +289,7 @@ class MyDataset(torch.utils.data.Dataset):
         ext_user_sequence = []
         for record_tuple in user_sequence:
             u, i, user_feat, item_feat, action_type, _ = record_tuple
-            if u is not None and u != 0:
+            if u is not None and u != 0 and user_feat is not None:
                 ext_user_sequence.insert(0, (u, user_feat, 2, action_type))
             if i is not None and i != 0:
                 ext_user_sequence.append((i, item_feat, 1, action_type))
