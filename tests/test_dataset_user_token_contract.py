@@ -18,7 +18,7 @@ except ModuleNotFoundError:
     sys.modules["torch"] = torch_stub
 
 
-from dataset import MyDataset
+from dataset import MyDataset, MyTestDataset
 
 if torch_was_stubbed:
     del sys.modules["torch"]
@@ -35,6 +35,19 @@ def _dataset_with(records: list[tuple], *, maxlen: int = 4) -> MyDataset:
         {"filled_for": token_id} if feat is None else dict(feat)
     )
     dataset._random_neq = lambda lower, upper, seen: 99
+    return dataset
+
+
+def _test_dataset_with(records: list[tuple], *, maxlen: int = 4) -> MyTestDataset:
+    dataset = object.__new__(MyTestDataset)
+    dataset.maxlen = maxlen
+    dataset.itemnum = 99
+    dataset.indexer_u_rev = {1: "user_1"}
+    dataset.feature_default_value = {"default": 0}
+    dataset.new_load_user_data = lambda uid: records
+    dataset.fill_missing_feat = lambda feat, token_id: (
+        {"filled_for": token_id} if feat is None else dict(feat)
+    )
     return dataset
 
 
@@ -74,3 +87,37 @@ def test_user_token_contract_at_maxlen_boundary() -> None:
     np.testing.assert_array_equal(token_type, np.array([2, 1, 1, 1, 1]))
     assert np.count_nonzero(token_type == 2) == 1
     assert seq_feat[0] == user_features
+
+
+def test_training_keeps_user_token_when_feature_row_is_empty() -> None:
+    dataset = _dataset_with(
+        [
+            (1, 11, None, {}, 1, 100),
+            (1, 12, None, {"100": 5}, 2, 200),
+            (1, None, {}, None, None, 200),
+        ]
+    )
+
+    seq, _, _, token_type, _, _, seq_feat, _, _ = dataset[0]
+
+    np.testing.assert_array_equal(seq, np.array([0, 0, 0, 1, 11]))
+    np.testing.assert_array_equal(token_type, np.array([0, 0, 0, 2, 1]))
+    assert seq_feat[3] == {}
+
+
+def test_inference_keeps_empty_feature_user_and_item_tokens() -> None:
+    dataset = _test_dataset_with(
+        [
+            (1, 11, None, {}, 1, 100),
+            (1, 12, None, {"100": 5}, 2, 200),
+            (1, None, {}, None, None, 200),
+        ]
+    )
+
+    seq, token_type, seq_feat, user_id = dataset[0]
+
+    np.testing.assert_array_equal(seq, np.array([0, 0, 0, 1, 11]))
+    np.testing.assert_array_equal(token_type, np.array([0, 0, 0, 2, 1]))
+    assert seq_feat[3] == {}
+    assert seq_feat[4] == {}
+    assert user_id == "user_1"
