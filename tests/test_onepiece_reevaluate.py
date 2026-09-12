@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -13,8 +14,8 @@ def test_reevaluator_is_path_neutral_and_reuses_the_aligned_evaluation_contract(
     assert "import run_onepiece_formal as runner" in source
     assert "runner.evaluate" in source
     assert "validate_targets_in_candidate_pool" in source
-    assert "/tmp/sunche" not in source
-    assert "s84448890" not in source
+    assert re.search(r"(?i)\b[A-Z]:[\\/]+Users[\\/]+[^\\/\s]+", source) is None
+    assert re.search(r"/(?:home|Users|tmp)/[A-Za-z0-9._-]+", source) is None
 
 
 def test_reevaluator_signs_source_model_and_writes_prediction_manifest():

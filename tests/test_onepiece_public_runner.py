@@ -15,8 +15,8 @@ def test_public_runner_contains_no_private_machine_paths():
         ROOT / "docs" / "ONEPIECE_RUNBOOK.md",
     ]
     text = "\n".join(path.read_text(encoding="utf-8") for path in files)
-    assert "/tmp/sunche" not in text
-    assert "s84448890" not in text
+    assert re.search(r"(?i)\b[A-Z]:[\\/]+Users[\\/]+[^\\/\s]+", text) is None
+    assert re.search(r"/(?:home|Users|tmp)/[A-Za-z0-9._-]+", text) is None
     assert re.search(r"hf_[A-Za-z0-9]{20,}", text) is None
 
 

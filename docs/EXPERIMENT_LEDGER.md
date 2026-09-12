@@ -1,5 +1,11 @@
 # Controlled Experiment Ledger
 
+> **2026-09-12 contract audit:** the historical Baseline 2×2 training pipeline
+> inserted repeated user tokens, while evaluation inserted one. The archived
+> metrics and hashes remain valid evidence of those runs, but the matrix is no
+> longer eligible for factor-effect or model-promotion claims. The independent
+> OnePiece runs below use a separate sequence builder and are unaffected.
+
 ## Fixed contract
 
 - Training/evaluation seed: 2025
@@ -9,9 +15,12 @@
 - Exact Top-10 evaluation on the same 78,921 row-aligned users and targets
 - Primary metric: `0.31 * HR@10 + 0.69 * NDCG@10`
 
-The only experimental factors are sequence `maxlen` (101 or 50, including the directly dependent position-embedding table length) and whether field-81 multimodal embeddings are enabled.
+The intended experimental factors were sequence `maxlen` and whether field-81
+multimodal embeddings were enabled. The later token-contract audit found an
+additional maxlen-dependent change in repeated user-token context, so the
+historical matrix must be rerun after the fix.
 
-## Search budget and promotion gate
+## Historical search budget and promotion gate
 
 The bounded search adds exactly two variants, MM50 and no-MM50, to the already verified MM101/no-MM101 pair. Every variant is trained once on one GPU. A result can be named the best measured point estimate only after:
 
@@ -21,16 +30,19 @@ The bounded search adds exactly two variants, MM50 and no-MM50, to the already v
 4. paired score intervals and the 2×2 interaction are reported; and
 5. single-seed, offline, and non-leaderboard limitations remain attached.
 
-## Runs
+## Historical Baseline runs
 
 | Variant | maxlen | MM | State | HR@10 | NDCG@10 | Score | Evidence note |
 |---|---:|---|---|---:|---:|---:|---|
-| MM101 | 101 | enabled | complete | 0.0313478035 | 0.0159694453 | 0.0207367364 | Formal baseline, verified artifacts |
-| no-MM101 | 101 | disabled | complete | 0.0317532723 | 0.0165207806 | 0.0212428530 | Row-aligned ablation, verified artifacts |
-| MM50 | 50 | enabled | complete | 0.0320827156 | 0.0160502759 | 0.0210203322 | Final BCE 0.2061; verified and remotely cleaned |
-| no-MM50 | 50 | disabled | complete | **0.0337045907** | **0.0172092099** | **0.0223227779** | Final BCE 0.2055; row-aligned metrics verified |
+| MM101 | 101 | enabled | historical | 0.0313478035 | 0.0159694453 | 0.0207367364 | Verified archived artifacts |
+| no-MM101 | 101 | disabled | historical | 0.0317532723 | 0.0165207806 | 0.0212428530 | Verified archived artifacts |
+| MM50 | 50 | enabled | historical | 0.0320827156 | 0.0160502759 | 0.0210203322 | Verified and remotely cleaned |
+| no-MM50 | 50 | disabled | historical | 0.0337045907 | 0.0172092099 | 0.0223227779 | Row-aligned metrics verified |
 
-The best measured point estimate is no-MM50: +7.65% versus MM101, +5.08% versus no-MM101, and +6.20% versus MM50. The overall interaction interval includes zero, and a stable causal or production-default claim would require additional training seeds. The current search intentionally stops at the fixed-seed 2×2 design.
+no-MM50 was the highest point estimate in the archived implementation. It is
+not promoted as a better model after the contract audit. A corrected four-run
+matrix and multiple training seeds are required before revisiting the maxlen or
+multimodal hypotheses.
 
 ## OnePiece controlled architecture pair
 
@@ -133,7 +145,7 @@ All comparisons use the same 78,921 users. Historical evaluation retains
 660,000 candidates and does not filter user history. Every aligned run excludes
 148,971 cold candidates, evaluates 511,029 warm candidates, masks 3,531,517
 user-history candidate pairs, records zero history overlap and reverifies the
-dataset receipt. The supplement compares ANN Top-10, not Beam results; aligned
+dataset receipt. The supplement compares exact full-candidate Top-10, not Beam results; aligned
 receipts record `beam_eval=false` and `beam_ann_fallback=false`.
 
 The aligned control is the highest point estimate, but the three overall score

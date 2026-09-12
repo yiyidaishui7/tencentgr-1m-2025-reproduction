@@ -22,7 +22,16 @@ The advanced architecture study references **OnePiece**:
 - Frozen revision: `73e51021dfafb75382baf9acd6a72ce47e5b705b`
 - Technical report: https://arxiv.org/abs/2512.07424
 
-The upstream OnePiece repository is not vendored or relicensed here. The
-public `patches/onepiece-runtime-fixes.patch` contains only the minimal runtime
-interoperability changes needed by this reproduction; users obtain the
-upstream source separately and remain responsible for its terms.
+The upstream OnePiece repository does not publish a license at the frozen
+revision. It is not vendored, relicensed, or patched source-distributed in the
+current tree. The runbook describes two interoperability edits in original
+prose so that users who are independently entitled to use the upstream source
+can reproduce the historical environment. The recorded runtime-patch digest
+is retained only as provenance for already produced artifacts; it is not a
+license grant. Written permission from the OnePiece rights holder is required
+before redistributing their source or a derivative patch.
+
+Earlier Git revisions of this repository contained such a patch. Removing it
+from the current tree does not remove it from existing clones, forks, or Git
+history. The repository license applies only to material this project is
+entitled to license and cannot replace upstream permission.

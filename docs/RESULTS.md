@@ -1,5 +1,12 @@
 # Evaluation Results and Audit
 
+> **Historical-result notice (2026-09-12):** the Baseline training dataset inserted
+> repeated user tokens, while the formal evaluation dataset inserted one user
+> token. The four metrics below are authentic outputs of that historical
+> implementation, but they no longer support maxlen or multimodal-effect claims.
+> The data-contract fix requires all four models to be retrained. The independent
+> OnePiece pipeline is not affected.
+
 ## Evaluation contract
 
 | Item | Definition |
@@ -24,7 +31,7 @@ official leaderboard evaluation.
 | Target absent from candidate pool | 19,518 |
 | Eligible/evaluated users | 78,921 |
 
-## Fixed-seed 2x2 aggregate metrics
+## Historical fixed-seed 2x2 aggregate metrics
 
 The score is `0.31 * HR@10 + 0.69 * NDCG@10`.
 
@@ -33,11 +40,11 @@ The score is `0.31 * HR@10 + 0.69 * NDCG@10`.
 | MM101 | 101 | on | 2,474 | 0.0313478035 | 0.0159694453 | 0.0207367364 | 241.503 s |
 | no-MM101 | 101 | off | 2,506 | 0.0317532723 | 0.0165207806 | 0.0212428530 | 133.926 s |
 | MM50 | 50 | on | 2,532 | 0.0320827156 | 0.0160502759 | 0.0210203322 | 212.630 s |
-| **no-MM50** | 50 | off | **2,660** | **0.0337045907** | **0.0172092099** | **0.0223227779** | 137.461 s |
+| no-MM50 | 50 | off | 2,660 | 0.0337045907 | 0.0172092099 | 0.0223227779 | 137.461 s |
 
-no-MM50 is the best measured point estimate, with a score `+7.65%` above
-MM101. Runtime is reported for traceability but is not used as a controlled
-selection metric because the runs shared hardware with unrelated load.
+no-MM50 was the highest point estimate in the historical run. It is retained
+for lineage and artifact verification, not for model selection. Runtime is
+reported for traceability and is not a controlled comparison.
 
 ## Row alignment and paired statistics
 
@@ -52,11 +59,10 @@ original history lengths in the same order.
 | no-MM50 − no-MM101 | +0.0010799 | +5.08% | [0.0001977, 0.0019621] |
 | Difference-in-differences interaction | +0.0007963 | — | [-0.0002521, 0.0018447] |
 
-The no-MM effect at maxlen 50 and the short-window effect without MM are
-positive for this fixed evaluation population. The overall interaction
-interval still includes zero, so the 2x2 result does not establish a stable
-interaction between recency and multimodal removal. Training-seed uncertainty
-is not estimated because each configuration was trained once.
+These paired values verify the archived prediction files against a common
+evaluation population. They do not isolate maxlen or multimodal effects because
+the training input contract was inconsistent with evaluation and the number of
+retained duplicate user tokens also depended on sequence length and maxlen.
 
 ## Row-aligned history-length slices
 
@@ -67,13 +73,10 @@ is not estimated because each configuration was trained once.
 | 51–80 | 23,339 | 0.0245931 | **0.0250301** | 0.0241666 | 0.0239811 | no-MM101 |
 | 81+ | 50,091 | 0.0184056 | 0.0190495 | 0.0194300 | **0.0215181** | no-MM50 |
 
-The 81+ slice contains 63.47% of evaluated users. In that slice, no-MM50 is
-`+12.96%` above no-MM101 with a paired interval
-`[0.0013953, 0.0035419]`; its slice interaction interval is also positive.
-Shorter-history slice winners vary and their relevant intervals include zero.
-The defensible interpretation is that the overall point-estimate gain is
-concentrated in long histories, while confirmation across training seeds and
-correction for exploratory slice comparisons remain future work.
+The slice table is preserved as historical evidence. The duplicate-user-token
+bug changes training context as a function of both sequence length and maxlen,
+so the previous long-history interpretation is withdrawn until the corrected
+four-model matrix is trained and evaluated.
 
 Machine-readable evidence is in `metrics/offline_metrics*.json`,
 `metrics/ablation_comparison.json`, and `metrics/four_way_comparison.json`.
@@ -86,9 +89,8 @@ Machine-readable evidence is in `metrics/offline_metrics*.json`,
 | 2 / 882 | 0.2240 | 0.2236 | 0.2263 | 0.2247 |
 | 3 / 1323 | 0.2043 | **0.2040** | 0.2061 | 0.2055 |
 
-Validation BCE does not rank the retrieval variants in the same order as
-Top-10 score. Selection therefore follows the held-out retrieval metric rather
-than training loss, while retaining the single-seed limitation.
+Validation BCE and Top-10 scores remain valid records of the historical runs,
+but no configuration is promoted from this matrix after the contract audit.
 
 ## Reproducibility evidence
 
@@ -106,3 +108,7 @@ than training loss, while retaining the single-seed limitation.
   `69f190d60abcacd5496a2aa279db4fe7c61bb8472a597dfff23f23946251439d` and
   `0d3352689daf095dfc1acff9915c53d517a6164549c5f1e5b9c6d44bacc81a6e`;
   both are retained in the private evidence archive.
+
+These checks establish artifact identity and row alignment. They do not repair
+the training/evaluation token-contract mismatch. See
+[`KNOWN_LIMITATIONS_CN.md`](KNOWN_LIMITATIONS_CN.md).

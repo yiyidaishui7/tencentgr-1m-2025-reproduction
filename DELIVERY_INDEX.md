@@ -1,6 +1,14 @@
-# Project Delivery Index
+# 项目交付索引 / Project Delivery Index
 
-This page is the final entry point for resume use, reproduction, and technical interviews.
+本页按“先展示、再深挖、后复现”的顺序组织公开材料。
+
+## 面试与汇报优先入口
+
+- [项目总览与汇报主线](docs/PROJECT_PORTFOLIO_CN.md)
+- [3 页面试 PowerPoint、预览与使用说明](docs/INTERVIEW_DECK_CN.md)
+- [3 分钟与 10 分钟逐页讲稿](docs/INTERVIEW_SCRIPTS_CN.md)
+- [简历两条版、三条版与英文版](docs/RESUME.md)
+- [已知限制与可安全使用的结论](docs/KNOWN_LIMITATIONS_CN.md)
 
 ## Public technical evidence
 
@@ -13,6 +21,7 @@ This page is the final entry point for resume use, reproduction, and technical i
 - [3-minute and 10-minute interview scripts (Chinese)](docs/INTERVIEW_SCRIPTS_CN.md)
 - [Technical interview Q&A (Chinese)](docs/INTERVIEW_QA_CN.md)
 - [Engineering incident review (Chinese)](docs/POSTMORTEM_CN.md)
+- [Known limitations and publication boundaries (Chinese)](docs/KNOWN_LIMITATIONS_CN.md)
 - [Reproduction runbook (Chinese)](docs/REPRODUCTION_RUNBOOK_CN.md)
 - [Resource, runtime, and artifact budget (Chinese)](docs/RESOURCE_BUDGET_CN.md)
 - [End-to-end acceptance checklist](docs/ACCEPTANCE_CHECKLIST.md)
@@ -38,7 +47,7 @@ This page is the final entry point for resume use, reproduction, and technical i
 - [2026-09-08 complete mask × protocol 2×2 and aligned SID comparison](metrics/onepiece_followup_comparison.json): eight verified artifact sets, four existing checkpoints, no retraining; the historical six-row table and both 2026-09-07 comparison JSONs remain unchanged.
 - [Eight-artifact comparison CLI](scripts/compare_onepiece_followup.py): `python scripts/compare_onepiece_followup.py --help`; the complete command and paired intervals are in the [alignment report](docs/ONEPIECE_ALIGNMENT_RESULTS.md#补充比较的复算入口).
 
-The 2026-09-08 supplement compares ANN Top-10 only. Its aligned control has the
+The 2026-09-08 supplement compares exact full-candidate Top-10 only. Its aligned control has the
 highest point estimate, but the mask/SID model contrasts and the 2×2 interaction
 all have overall score intervals crossing zero. Positive same-checkpoint overall score protocol effects
 are not model improvements. The evidence is single-seed, with unadjusted paired

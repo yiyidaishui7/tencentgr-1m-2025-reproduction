@@ -5,7 +5,7 @@
 [![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Model-yellow)](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 [![Dataset](https://img.shields.io/badge/Dataset-TencentGR--1M-blue)](https://huggingface.co/datasets/TAAC2025/TencentGR-1M)
 
-[中文说明](README_CN.md) · [Delivery index](DELIVERY_INDEX.md) · [Detailed results](docs/RESULTS.md) · [Resource budget](docs/RESOURCE_BUDGET_CN.md) · [Resume kit](docs/RESUME.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
+[中文说明](README_CN.md) · [Project portfolio](docs/PROJECT_PORTFOLIO_CN.md) · [Interview deck](docs/INTERVIEW_DECK_CN.md) · [Delivery index](DELIVERY_INDEX.md) · [Known limitations](docs/KNOWN_LIMITATIONS_CN.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 
 An independent, non-official reproduction of the 2025 Tencent Ads Algorithm
 Competition baseline on TencentGR-1M. The project turns the official starting
@@ -95,40 +95,43 @@ The control has the highest aligned point estimate, but all four overall score i
 cross zero: they establish neither a stable model gain/loss nor an interaction.
 All four same-checkpoint overall score protocol effects have positive intervals; these remain
 **evaluation-protocol effects, not model improvements**. This supplement compares
-ANN Top-10 only, not Beam outputs. It uses one training seed and unadjusted paired
+exact full-candidate Top-10 only, not Beam outputs. It uses one training seed and unadjusted paired
 per-user intervals, which do not measure training-seed variance. See the
 [full results and reproduction CLI](docs/ONEPIECE_ALIGNMENT_RESULTS.md),
 [strict comparison JSON](metrics/onepiece_followup_comparison.json), and
 [`compare_onepiece_followup.py`](scripts/compare_onepiece_followup.py).
 
-## Results at a glance
+## Historical baseline results
+
+> **Contract notice (2026-09):** an audit found that the archived Baseline
+> training path inserted one user token per event, while evaluation
+> inserted one per sequence. The code and a regression test are fixed, but the
+> 2×2 has not yet been retrained. The table is retained only for artifact
+> lineage; its max-length and multimodal-effect interpretations are withdrawn.
+> The separate OnePiece pipeline and results above are unaffected.
 
 | Variant | maxlen | MM | HR@10 | NDCG@10 | Score | Final BCE |
 |---|---:|---|---:|---:|---:|---:|
 | MM101 | 101 | on | 0.0313478 | 0.0159694 | 0.0207367 | 0.2043 |
 | no-MM101 | 101 | off | 0.0317533 | 0.0165208 | 0.0212429 | **0.2040** |
 | MM50 | 50 | on | 0.0320827 | 0.0160503 | 0.0210203 | 0.2061 |
-| **no-MM50** | 50 | off | **0.0337046** | **0.0172092** | **0.0223228** | 0.2055 |
+| no-MM50 | 50 | off | 0.0337046 | 0.0172092 | 0.0223228 | 0.2055 |
 
 The evaluation uses a seeded 90/10 user split and holds out the last click from
 each validation sequence. Histories contain only earlier events, and retrieval
 runs against the official 660k candidate pool. See [the full evaluation
 contract and slices](docs/RESULTS.md).
 
-All four prediction files contain the same users, targets, and original
-history lengths row by row. no-MM50 is the best fixed-seed point estimate:
-`+7.65%` versus MM101, `+5.08%` versus no-MM101, and `+6.20%` versus MM50.
-The latter two paired score intervals are positive for this evaluation
-population, but every configuration has only one training seed. The overall
-2x2 interaction interval includes zero, so the study does not establish a
-stable causal interaction or that multimodal information is generally
-harmful. The largest gain is concentrated in the 81+ history slice, which
-contains 63.47% of evaluated users.
+All four prediction files remain row-aligned and the point estimates are
+reproducible from their archived artifacts. They must not be used to claim a
+max-length effect, a multimodal-feature effect, or a best configuration until
+the corrected training contract is rerun.
 
-Two purpose-specific SafeTensors checkpoints are public: `model.safetensors`
-is the audited MM101 baseline; `model_nomm50.safetensors` is the best
-fixed-seed point estimate and must be loaded with `--maxlen 50
---disable_mm_emb`. Their configurations are not interchangeable.
+Two purpose-specific historical SafeTensors checkpoints remain public for
+artifact verification: `model.safetensors` is MM101 and
+`model_nomm50.safetensors` is no-MM50. The latter must be loaded with
+`--maxlen 50 --disable_mm_emb`; neither checkpoint is evidence for the
+withdrawn 2×2 interpretation.
 
 ## System overview
 
@@ -213,8 +216,9 @@ python main.py \
   --disable_mm_emb
 ```
 
-The command above trains the no-MM50 best-point-estimate configuration. Remove
-the final two flags for the MM101 baseline. Short smoke runs can use
+The command above trains the corrected no-MM50 configuration. Remove the final
+two flags for MM101. Do not compare new runs with the archived table as if the
+training contracts were identical. Short smoke runs can use
 `--max_train_steps` and `--max_valid_steps`.
 
 ### 4. Download a published checkpoint
@@ -249,7 +253,8 @@ python offline_eval.py \
 ├── experiment_plan.py                 # drift-resistant four-variant command plan
 ├── runtime_utils.py                   # device, seed, checkpoint portability
 ├── scripts/                           # download, audits, and four-way comparison CLI
-├── configs/ + patches/                # controlled OnePiece configs and upstream runtime patch
+├── configs/                           # controlled OnePiece configs
+├── docs/ONEPIECE_RUNBOOK.md           # source contract and manual interoperability edits
 ├── tests/                             # regression tests
 ├── metrics/offline_metrics*.json      # machine-readable metrics for four variants
 ├── metrics/four_way_comparison.json   # alignment, slices, deltas, interaction
@@ -265,12 +270,22 @@ python offline_eval.py \
 ## Verification
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q
 python -m compileall -q .
 ```
 
+On Ascend, preserve the image-matched `torch`/`torch_npu` pair and install
+`-r requirements-npu.txt -r requirements-dev.txt` instead.
+
 The published model file has SHA-256
 `1d53197a6c09fca20ad1c24d702a92a58adfc972f77f7236be3283d065db859b`.
+
+## Security note
+
+Load `pickle`, legacy `.pt`, and resume artifacts only from trusted sources;
+deserialization happens before every semantic check can run. Prefer
+SafeTensors plus a verified SHA-256 for public model exchange.
 
 ## Attribution and license
 
@@ -279,3 +294,6 @@ This work is derived from the
 licensed under CC BY-NC 4.0. TencentGR-1M is published by TAAC2025 under
 CC BY 4.0. This repository therefore uses CC BY-NC 4.0 and is restricted to
 non-commercial use. See [ATTRIBUTION.md](ATTRIBUTION.md) and [LICENSE](LICENSE).
+That repository license grants no rights to upstream OnePiece material. The
+current tree does not redistribute OnePiece source or a derivative patch; see
+[known limitations](docs/KNOWN_LIMITATIONS_CN.md#3-许可与来源).

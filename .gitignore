@@ -2,12 +2,21 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.codex-build/
+.codex-finalizer/
+.chart-data-*/
 .idea/
 .vscode/
 .env
 .env.*
 
+build/
 data/
+eval/
+htmlcov/
+plans/
+runs/
+scratch/
 weights/
 outputs/
 checkpoints/
@@ -16,6 +25,7 @@ logs/
 artifacts/
 offline_eval/
 offline_eval_scratch/
+.coverage
 
 *.pt
 *.pth
@@ -24,4 +34,3 @@ offline_eval_scratch/
 *.u64bin
 *.npz
 *.log
-

@@ -1,5 +1,9 @@
 # 可复制复现手册
 
+> 本手册中的训练命令已使用修复后的 user-token 契约。仓库内历史 Baseline 指标和
+> SafeTensors 来自修复前训练，不应与新运行当作同一训练契约直接比较；完整 2×2
+> 需全部重训后才能重新解释 maxlen/MM 效应。
+
 ## 1. 环境
 
 - Python 3.10+
@@ -12,7 +16,18 @@ git clone https://github.com/yiyidaishui7/tencentgr-1m-2025-reproduction.git
 cd tencentgr-1m-2025-reproduction
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+```
+
+CPU/CUDA 环境：
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+```
+
+Ascend 环境应保留镜像匹配的 `torch`/`torch_npu`：
+
+```bash
+pip install -r requirements-npu.txt -r requirements-dev.txt
 ```
 
 ## 2. 获取和审计数据
@@ -101,7 +116,7 @@ python offline_eval.py \
 ## 7. 正确性检查
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pytest -q
 python -m compileall -q .
 ```
 
@@ -136,7 +151,7 @@ python scripts/compare_four_variants.py \
 公开权重有两个：
 
 - `model.safetensors`：MM101 审计基线，使用 `--maxlen 101`，保留 MM。
-- `model_nomm50.safetensors`：最佳固定 seed 点估计，必须使用
+- `model_nomm50.safetensors`：历史 no-MM50 产物，必须使用
   `--maxlen 50 --disable_mm_emb`。
 
 显存量级、四组端到端评测耗时和存储预算见

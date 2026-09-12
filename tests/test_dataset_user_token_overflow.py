@@ -69,7 +69,6 @@ def test_training_overflow_keeps_user_and_most_recent_history() -> None:
     np.testing.assert_array_equal(seq, np.array([1, 12, 13, 14, 15]))
     np.testing.assert_array_equal(token_type, np.array([2, 1, 1, 1, 1]))
 
-
 def test_inference_overflow_keeps_user_and_most_recent_history() -> None:
     dataset = _inference_dataset(_records((11, 12, 13, 14, 15, 16)))
 
@@ -77,4 +76,3 @@ def test_inference_overflow_keeps_user_and_most_recent_history() -> None:
 
     np.testing.assert_array_equal(seq, np.array([1, 12, 13, 14, 15]))
     np.testing.assert_array_equal(token_type, np.array([2, 1, 1, 1, 1]))
-

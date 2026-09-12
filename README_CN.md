@@ -1,6 +1,6 @@
 # TencentGR-1M 2025 全模态生成式推荐复现
 
-[English](README.md) · [最终交付索引](DELIVERY_INDEX.md) · [完整实验结果](docs/RESULTS.md) · [资源预算](docs/RESOURCE_BUDGET_CN.md) · [简历与面试材料](docs/RESUME.md) · [模型权重](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
+[English](README.md) · [项目总览](docs/PROJECT_PORTFOLIO_CN.md) · [面试展示稿](docs/INTERVIEW_DECK_CN.md) · [最终交付索引](DELIVERY_INDEX.md) · [已知限制](docs/KNOWN_LIMITATIONS_CN.md) · [模型权重](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 
 本项目基于 2025 腾讯广告算法大赛官方 Baseline，在公开的
 TencentGR-1M 数据集上完成独立、非官方的端到端复现。项目覆盖确定性训练、
@@ -78,34 +78,36 @@ README 所述的严格 L1 内 L2 实现。
 
 控制组的对齐点估计最高，但上述四个总体综合分区间均跨 0，不能声称稳定模型提升、退化或交互。
 四组同 checkpoint 的总体综合分协议效应区间均为正，但仍是**评测协议效应，不是模型提升**。
-本补充仅比较 ANN Top-10，不比较 Beam 结果；每组只有一个训练 seed，配对用户区间
+本补充仅比较全候选精确 Top-10，不比较 Beam 结果；每组只有一个训练 seed，配对用户区间
 未经多重比较调整，也不涵盖训练 seed 方差。完整结果与复算命令见
 [对齐报告](docs/ONEPIECE_ALIGNMENT_RESULTS.md)、
 [标准比较 JSON](metrics/onepiece_followup_comparison.json) 和
 [`compare_onepiece_followup.py`](scripts/compare_onepiece_followup.py)。
 
-## 核心结果
+## 历史 Baseline 结果
+
+> **数据契约提示（2026-09）：** 审计发现，历史 Baseline 训练路径曾按事件重复插入
+> 用户 token，而评测路径每条序列只插入一次。代码与回归测试已经修复，
+> 但 2×2 尚未按新契约重训。下表仅用于产物追溯，原 maxlen 与多模态效应解释全部
+> 撤回；上文独立 OnePiece 管线与指标不受影响。
 
 | 变体 | maxlen | 多模态 | HR@10 | NDCG@10 | 综合分 | 最终 BCE |
 |---|---:|---|---:|---:|---:|---:|
 | MM101 | 101 | 开启 | 0.0313478 | 0.0159694 | 0.0207367 | 0.2043 |
 | no-MM101 | 101 | 关闭 | 0.0317533 | 0.0165208 | 0.0212429 | **0.2040** |
 | MM50 | 50 | 开启 | 0.0320827 | 0.0160503 | 0.0210203 | 0.2061 |
-| **no-MM50** | 50 | 关闭 | **0.0337046** | **0.0172092** | **0.0223228** | 0.2055 |
+| no-MM50 | 50 | 关闭 | 0.0337046 | 0.0172092 | 0.0223228 | 0.2055 |
 
 离线协议采用固定随机种子的 90/10 用户划分，对验证用户保留最后一次点击，
 历史序列只包含目标点击之前的事件，并在官方约 66 万候选集合上进行 Top-10
 检索。详细审计与分桶结果见 [docs/RESULTS.md](docs/RESULTS.md)。
 
-四组预测的用户、目标和原始历史长度逐行一致。no-MM50 是固定 seed 下的最佳
-点估计：相对 MM101、no-MM101、MM50 的综合分分别提高 7.65%、5.08%、
-6.20%。后两条差值在本次评测人口上的配对区间为正，但每个配置只训练了一个
-seed，且整体 2×2 交互项区间仍跨过 0，因此不能声称存在稳定因果交互，也不能
-声称多模态信息普遍无效。主要收益集中在占评测人口 63.47% 的 81+ 长历史组。
+四组预测仍保持用户、目标和原始历史长度逐行一致，归档产物也可复算点估计；
+但在按修复后训练契约重跑前，不得据此声称窗口长度效应、多模态效应或最佳配置。
 
-公开权重包含两个用途明确的 SafeTensors：`model.safetensors` 是 MM101 审计
-基线；`model_nomm50.safetensors` 对应最佳固定 seed 点估计，加载时必须同时使用
-`--maxlen 50 --disable_mm_emb`。二者不能混用配置。
+公开权重保留两个历史 SafeTensors 供产物校验：`model.safetensors` 对应 MM101，
+`model_nomm50.safetensors` 对应 no-MM50，后者加载时必须同时使用
+`--maxlen 50 --disable_mm_emb`。二者不能混用配置，也不能作为已撤回 2×2 解释的证据。
 
 ## 架构
 
@@ -138,9 +140,21 @@ flowchart LR
 
 ## 快速复现
 
+CPU/CUDA 环境先安装标准依赖：
+
 ```bash
 pip install -r requirements.txt
+```
 
+Ascend 环境应保留镜像匹配的 `torch`/`torch_npu`，改用：
+
+```bash
+pip install -r requirements-npu.txt
+```
+
+随后执行数据审计、计划、训练与评测：
+
+```bash
 python scripts/download_tencentgr_1m.py /data/TencentGR-1M
 python scripts/validate_tencentgr_1m.py /data/TencentGR-1M
 python scripts/audit_id_alignment.py /data/TencentGR-1M
@@ -171,8 +185,8 @@ python offline_eval.py \
   --disable_mm_emb
 ```
 
-上面的训练和评测命令对应 no-MM50 最佳点估计；去掉最后两个配置参数即可运行
-MM101 审计基线。
+上面的训练命令使用修复后的 no-MM50 数据契约；去掉最后两个配置参数即可运行
+MM101。不要把新训练结果与历史表格当作同一训练契约直接比较。
 
 计划器只写命令清单，不会自行占用 GPU。完整四组执行规则和 checkpoint 选择说明见
 [复现手册](docs/REPRODUCTION_RUNBOOK_CN.md)。
@@ -184,12 +198,23 @@ MM101 审计基线。
 ## 验证
 
 ```bash
-python -m unittest discover -s tests -v
+python -m pip install -r requirements.txt -r requirements-dev.txt
+python -m pytest -q
 python -m compileall -q .
 ```
+
+Ascend 环境应保留镜像匹配的 `torch`/`torch_npu`，改为安装
+`-r requirements-npu.txt -r requirements-dev.txt`，不要覆盖通用 PyPI `torch`。
+
+## 安全提示
+
+只从可信来源加载 `pickle`、旧式 `.pt` 和断点文件；反序列化可能早于完整语义校验。
+公开交换模型时优先使用 SafeTensors，并核验 SHA-256。
 
 ## 许可
 
 官方 Baseline 使用 CC BY-NC 4.0，TencentGR-1M 数据集使用 CC BY 4.0。
 本项目沿用更严格的 CC BY-NC 4.0，仅限非商业用途，并在
 [ATTRIBUTION.md](ATTRIBUTION.md) 中保留完整署名。
+该仓库许可不授予任何 OnePiece 上游材料权利；当前树不再分发其源码或衍生补丁，
+详情见[已知限制](docs/KNOWN_LIMITATIONS_CN.md#3-许可与来源)。

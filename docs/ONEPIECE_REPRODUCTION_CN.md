@@ -52,11 +52,10 @@ sample-bias-corrected InfoNCE 路线，并通过同协议 Transformer 对照回�
 
 ## 与既有 Baseline 的关系
 
-既有四组 SASRec-style baseline 中，最佳固定 seed 点估计是 no-MM50，综合分 0.0223228。
-HSTU 和 Transformer 分别达到 0.0663408、0.0637291，即系统级点估计相对提高
-197.19% 和 185.49%。由于这组比较同时改变了模型容量、特征参数化、训练目标、Batch
-和训练轮数，它只能说明 OnePiece 训练/建模系统在本地协议下更强，不能归因为 HSTU
-架构本身；纯架构结论只来自上面的 HSTU/Transformer 单变量对照。
+既有四组 SASRec-style Baseline 产物仍用于工程追溯，但审计发现其训练与评测
+user-token 契约不一致，修复后的 2×2 尚未重训。因此本文撤回 HSTU/Transformer
+相对历史 no-MM50 的跨系统百分比，不用它证明模型收益。可辩护的纯架构证据只来自
+上面的同协议 HSTU/Transformer 单变量对照。
 
 ## 已完成的工程门槛
 

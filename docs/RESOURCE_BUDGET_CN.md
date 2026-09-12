@@ -4,6 +4,9 @@
 Benchmark：每个变体只测量一次，且数值包含数据集构造、候选编码、Query 编码、
 精确 Top-10 与指标计算。
 
+> 下表对应历史 Baseline 产物。训练 user-token 契约已发现并修复，四组尚未重训；
+> 因而耗时可用于粗略资源预算，但不能用这些权重或分数比较 maxlen/MM 效果。
+
 ## 正式评测实测
 
 | 变体 | maxlen | MM | 评测用户 | 端到端耗时 | 用户/秒 |
@@ -33,7 +36,7 @@ Benchmark：每个变体只测量一次，且数值包含数据集构造、候�
 | 产物 | 变体 | 张量数 | 大小 | SHA-256 |
 |---|---|---:|---:|---|
 | `model.safetensors` | MM101 审计基线 | 48 | 1,038,623,368 bytes | `1d53197a6c09fca20ad1c24d702a92a58adfc972f77f7236be3283d065db859b` |
-| `model_nomm50.safetensors` | no-MM50 最佳点估计 | 46 | 1,038,601,832 bytes | `50be9b4cdb931624a62c1b700803e3ea3f8b51c2a1a8419fe89a7ba6dba8420d` |
+| `model_nomm50.safetensors` | 历史 no-MM50 | 46 | 1,038,601,832 bytes | `50be9b4cdb931624a62c1b700803e3ea3f8b51c2a1a8419fe89a7ba6dba8420d` |
 
 - 原始数据约 137 GB，不进入 Git。
 - 完整私有证据归档为 17.851 GiB，包含受限数据衍生产物、PyTorch 权重、逐行预测、

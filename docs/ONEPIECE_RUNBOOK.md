@@ -4,22 +4,38 @@ This runbook describes the public, path-neutral version of the formal runner.
 It does not include dataset files, upstream model source, checkpoints, or
 machine-specific credentials.
 
-## 1. Freeze upstream and apply the runtime patch
+## 1. Freeze upstream and reproduce the interoperability revision
 
 ```bash
 git clone https://github.com/shuoyang2/OnePiece.git
 cd OnePiece
 git checkout 73e51021dfafb75382baf9acd6a72ce47e5b705b
-git apply /path/to/tencentgr-reproduction/patches/onepiece-runtime-fixes.patch
 ```
 
-The patch removes import-time dependency installation and supplies the missing
-`interest_k` argument in two metric calls. Install dependencies into an
-isolated environment before importing the upstream modules.
+The upstream repository does not publish a license at this frozen revision,
+so this repository does not redistribute its source or a derivative patch.
+Only proceed when you are independently entitled to use that source. Apply
+these two small interoperability changes manually:
+
+1. In `code/dataset.py`, remove the import-time shell command that installs
+   `orjson`; install the dependency in an isolated environment instead.
+2. In `code/model.py`, pass the existing `args.interest_k` value before
+   `self.dev` in both metric calls whose final argument is the device.
+
+After editing, the canonical SHA-256 values expected by the formal runner are:
+
+| Upstream file | Expected canonical SHA-256 |
+|---|---|
+| `code/model.py` | `155c6ed98c6d933bd56f599f8bade13adb7585ae0c0c4e609c2f5648a885dd27` |
+| `code/dataset.py` | `15d2ce7f5f52ffd2e0d2c17db457326270cb3c6e846000e333408ebe18c6207b` |
+
+The historical runtime-patch digest in `onepiece_source_contract.py` is an
+experiment provenance identifier for already produced artifacts. The patch
+itself is intentionally no longer distributed in the current tree.
 
 Before a run, `onepiece_source_contract.py` canonicalizes line endings and
 verifies `model.py`, `dataset.py`, `utils.py`, and `deepseek_moe.py` against
-the frozen commit. The runner also signs those hashes, the runtime patch, its
+the frozen interoperability revision. The runner also signs those hashes, the historical patch identifier, its
 own implementation modules, the offline contract, and the indexer into
 `run_signature`. A checkpoint created by any different signature is rejected.
 

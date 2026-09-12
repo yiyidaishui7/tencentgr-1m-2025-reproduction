@@ -62,7 +62,7 @@
 历史协议使用原始 660,000 个候选且不屏蔽用户历史；对齐协议排除 148,971 个冷候选，
 在 511,029 个暖候选上评测。四组对齐运行均重新核验数据集回执，屏蔽 3,531,517 个
 用户-历史候选对，预测历史重叠为 0；`beam_eval=false`、`beam_ann_fallback=false`。
-本节所有指标均为 ANN Top-10，不使用或重新验证历史 Beam 指标。
+本节所有指标均为全候选双塔精确 Top-10（产物字段沿用 `ann_*` 命名），不使用或重新验证历史 Beam 指标。
 
 <!-- AUTO-GENERATED values from metrics/onepiece_followup_comparison.json -->
 | 既有 checkpoint | 历史协议综合分 | 对齐协议综合分 |
