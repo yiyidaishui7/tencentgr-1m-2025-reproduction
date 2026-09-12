@@ -528,14 +528,14 @@ class MyTestDataset(MyDataset):
                     user_id = u
                 else:  # 如果是int，说明是re_id
                     user_id = self.indexer_u_rev[u]
-            if u and user_feat:
+            if u is not None and u != 0 and user_feat is not None:
                 if type(u) == str:
                     u = 0
                 if user_feat:
                     user_feat = self._process_cold_start_feat(user_feat)
                 ext_user_sequence.insert(0, (u, user_feat, 2))
 
-            if i and item_feat:
+            if i is not None and i != 0:
                 # 序列对于训练时没见过的item，不会直接赋0，而是保留creative_id，creative_id远大于训练时的itemnum
                 if i > self.itemnum:
                     i = 0

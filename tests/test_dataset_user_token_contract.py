@@ -18,10 +18,12 @@ except ModuleNotFoundError:
     sys.modules["torch"] = torch_stub
 
 
-from dataset import MyDataset, MyTestDataset
-
-if torch_was_stubbed:
-    del sys.modules["torch"]
+try:
+    from dataset import MyDataset, MyTestDataset
+finally:
+    if torch_was_stubbed:
+        sys.modules.pop("dataset", None)
+        sys.modules.pop("torch", None)
 
 
 def _dataset_with(records: list[tuple], *, maxlen: int = 4) -> MyDataset:
