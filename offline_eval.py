@@ -16,7 +16,7 @@ from torch.utils.data import DataLoader
 from tqdm import tqdm
 
 from candidate_utils import candidate_item_column, canonical_id_key
-from dataset import MyTestDataset
+from dataset import MyTestDataset, truncate_sequence_preserving_user
 from infer import (
     _read_fbin,
     _read_u64bin,
@@ -173,7 +173,10 @@ class LastClickEvalDataset(MyTestDataset):
         seq_feat[:] = None
 
         output_index = self.maxlen
-        for item_id, features, record_type in reversed(sequence_records):
+        visible_records = truncate_sequence_preserving_user(
+            sequence_records, self.maxlen + 1
+        )
+        for item_id, features, record_type in reversed(visible_records):
             seq[output_index] = item_id
             token_type[output_index] = record_type
             seq_feat[output_index] = self.fill_missing_feat(features, item_id)

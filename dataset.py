@@ -27,6 +27,21 @@ def _is_null(v: Any) -> bool:
         return False
 
 
+def truncate_sequence_preserving_user(
+    records: List[Tuple[Any, ...]], capacity: int
+) -> List[Tuple[Any, ...]]:
+    """Keep a leading user token and the newest records within ``capacity``."""
+    if capacity <= 0:
+        return []
+    if len(records) <= capacity:
+        return list(records)
+    if records and len(records[0]) > 2 and records[0][2] == 2:
+        if capacity == 1:
+            return [records[0]]
+        return [records[0], *records[-(capacity - 1) :]]
+    return list(records[-capacity:])
+
+
 def load_feat_dict_from_parquet_folder(
     src: Path, id_col: str, feat_ids: List[str], *, keep_all_rows: bool = True
 ) -> Dict[str, Dict[str, Any]]:
@@ -314,8 +329,11 @@ class MyDataset(torch.utils.data.Dataset):
             if record_tuple[2] == 1 and record_tuple[0]:
                 ts.add(record_tuple[0])
 
-        # left-padding, 从后往前遍历，将用户序列填充到maxlen+1的长度
-        for record_tuple in reversed(ext_user_sequence[:-1]):
+        # left-padding，保留一个user token，并从后往前填充最近的item历史
+        history_sequence = truncate_sequence_preserving_user(
+            ext_user_sequence[:-1], self.maxlen + 1
+        )
+        for record_tuple in reversed(history_sequence):
             i, feat, type_, act_type = record_tuple
             next_i, next_feat, next_type, next_act_type = nxt
             feat = self.fill_missing_feat(feat, i)
@@ -554,7 +572,10 @@ class MyTestDataset(MyDataset):
             if record_tuple[2] == 1 and record_tuple[0]:
                 ts.add(record_tuple[0])
 
-        for record_tuple in reversed(ext_user_sequence[:-1]):
+        history_sequence = truncate_sequence_preserving_user(
+            ext_user_sequence[:-1], self.maxlen + 1
+        )
+        for record_tuple in reversed(history_sequence):
             i, feat, type_ = record_tuple
             feat = self.fill_missing_feat(feat, i)
             seq[idx] = i
