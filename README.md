@@ -5,7 +5,7 @@
 [![Model on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97-Model-yellow)](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 [![Dataset](https://img.shields.io/badge/Dataset-TencentGR--1M-blue)](https://huggingface.co/datasets/TAAC2025/TencentGR-1M)
 
-[中文说明](README_CN.md) · [Project portfolio](docs/PROJECT_PORTFOLIO_CN.md) · [Interview deck](docs/INTERVIEW_DECK_CN.md) · [Delivery index](DELIVERY_INDEX.md) · [Known limitations](docs/KNOWN_LIMITATIONS_CN.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
+[中文说明](README_CN.md) · [Project portfolio](docs/PROJECT_PORTFOLIO_CN.md) · [Plain-language guide (中文)](docs/PROJECT_EXPLAINED_CN.md) · [Interview deck](docs/INTERVIEW_DECK_CN.md) · [Delivery index](DELIVERY_INDEX.md) · [Known limitations](docs/KNOWN_LIMITATIONS_CN.md) · [Model weights](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 
 An independent, non-official reproduction of the 2025 Tencent Ads Algorithm
 Competition baseline on TencentGR-1M. The project turns the official starting

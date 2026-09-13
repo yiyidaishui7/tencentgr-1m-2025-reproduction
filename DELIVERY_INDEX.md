@@ -5,8 +5,9 @@
 ## 面试与汇报优先入口
 
 - [项目总览与汇报主线](docs/PROJECT_PORTFOLIO_CN.md)
+- [项目白话说明：流程、术语、实验与追问入口](docs/PROJECT_EXPLAINED_CN.md)
 - [3 页面试 PowerPoint、预览与使用说明](docs/INTERVIEW_DECK_CN.md)
-- [3 分钟与 10 分钟逐页讲稿](docs/INTERVIEW_SCRIPTS_CN.md)
+- [30 秒、3 分钟与 6–8 分钟简单语言讲稿](docs/INTERVIEW_SCRIPTS_CN.md)
 - [简历两条版、三条版与英文版](docs/RESUME.md)
 - [已知限制与可安全使用的结论](docs/KNOWN_LIMITATIONS_CN.md)
 
@@ -18,7 +19,7 @@
 - [Architecture and experiment design (Chinese)](docs/ARCHITECTURE_AND_EXPERIMENTS_CN.md)
 - [Controlled experiment ledger](docs/EXPERIMENT_LEDGER.md)
 - [Resume material](docs/RESUME.md)
-- [3-minute and 10-minute interview scripts (Chinese)](docs/INTERVIEW_SCRIPTS_CN.md)
+- [3-minute and 6–8-minute interview scripts (plain Chinese)](docs/INTERVIEW_SCRIPTS_CN.md)
 - [Technical interview Q&A (Chinese)](docs/INTERVIEW_QA_CN.md)
 - [Engineering incident review (Chinese)](docs/POSTMORTEM_CN.md)
 - [Known limitations and publication boundaries (Chinese)](docs/KNOWN_LIMITATIONS_CN.md)

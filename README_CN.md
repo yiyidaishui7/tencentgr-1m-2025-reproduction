@@ -1,6 +1,6 @@
 # TencentGR-1M 2025 全模态生成式推荐复现
 
-[English](README.md) · [项目总览](docs/PROJECT_PORTFOLIO_CN.md) · [面试展示稿](docs/INTERVIEW_DECK_CN.md) · [最终交付索引](DELIVERY_INDEX.md) · [已知限制](docs/KNOWN_LIMITATIONS_CN.md) · [模型权重](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
+[English](README.md) · [项目总览](docs/PROJECT_PORTFOLIO_CN.md) · [白话说明](docs/PROJECT_EXPLAINED_CN.md) · [面试展示稿](docs/INTERVIEW_DECK_CN.md) · [最终交付索引](DELIVERY_INDEX.md) · [已知限制](docs/KNOWN_LIMITATIONS_CN.md) · [模型权重](https://huggingface.co/sixteensun/tencentgr-1m-2025-reproduction)
 
 本项目基于 2025 腾讯广告算法大赛官方 Baseline，在公开的
 TencentGR-1M 数据集上完成独立、非官方的端到端复现。项目覆盖确定性训练、
